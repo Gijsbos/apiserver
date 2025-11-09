@@ -8,15 +8,16 @@ use ReflectionClass;
 use ReflectionMethod;
 use gijsbos\ApiServer\Classes\DeleteRoute;
 use gijsbos\ApiServer\Classes\GetRoute;
-use gijsbos\ApiServer\Classes\LogEnabledClass;
 use gijsbos\ApiServer\Classes\OptionsRoute;
 use gijsbos\ApiServer\Classes\PostRoute;
 use gijsbos\ApiServer\Classes\PutRoute;
 use gijsbos\ApiServer\Classes\Route;
 use gijsbos\ApiServer\RouteController;
 use gijsbos\ApiServer\Server;
-use function gijsbos\ApiServer\Library\log_debug;
-use function gijsbos\ApiServer\Library\log_info;
+use gijsbos\Logging\Classes\LogEnabledClass;
+
+use function gijsbos\Logging\Library\log_debug;
+use function gijsbos\Logging\Library\log_info;
 
 /**
  * RouteParser
