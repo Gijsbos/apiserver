@@ -4,10 +4,11 @@ declare(strict_types=1);
 namespace gijsbos\ApiServer;
 
 use Exception;
-use gijsbos\ApiServer\Classes\RequestHeader;
 use RuntimeException;
 use Throwable;
 use TypeError;
+
+use gijsbos\ApiServer\Classes\RequestHeader;
 use gijsbos\Http\Exceptions\ForbiddenException;
 use gijsbos\Http\Exceptions\HTTPRequestException;
 use gijsbos\Http\Exceptions\ResourceNotFoundException;
@@ -15,13 +16,14 @@ use gijsbos\ApiServer\Interfaces\RouteInterface;
 use gijsbos\ApiServer\Utils\ArrayToXmlParser;
 use gijsbos\ApiServer\Utils\RouteMethodParamsFactory;
 use gijsbos\ApiServer\Utils\RouteParser;
+use gijsbos\Logging\Classes\LogEnabledClass;
 
-use function gijsbos\ApiServer\Library\log_error;
+use function gijsbos\Logging\Library\log_error;
 
 /**
  * Server
  */
-class Server
+class Server extends LogEnabledClass
 {
     public static string $CACHE_FOLDER = "./cache/api-speed";
     private string $requestMethod;
@@ -38,6 +40,8 @@ class Server
      */
     public function __construct(array $opts = [])
     {
+        parent::__construct();
+
         $this->pathPrefix = is_string(@$opts["pathPrefix"]) ? str_must_start_end_with($opts["pathPrefix"], "/") : "";
         $this->requestMethod = @$_SERVER["REQUEST_METHOD"];
         $this->requestURI = str_must_start_with(strlen($this->pathPrefix) > 0 ? str_must_not_start_with($_SERVER["REQUEST_URI"], $this->pathPrefix) : $_SERVER["REQUEST_URI"], "/");
@@ -46,6 +50,8 @@ class Server
         $this->requestEndTime = null;
         $this->requireHttps = array_key_exists("requireHttps", $opts) ? boolval($opts["requireHttps"]) : false;
         $this->addRequestTime = array_key_exists("addRequestTime", $opts) ? boolval($opts["addRequestTime"]) : false;
+
+        $this->setLogOutput("file");
     }
 
     /**
@@ -295,14 +301,29 @@ class Server
         }
         catch(RuntimeException | Exception | TypeError | Throwable $ex)
         {
-            log_error($ex->getMessage());
-            log_error($ex->getTraceAsString());
+            try
+            {
+                log_error($ex->getMessage());
+                log_error($ex->getTraceAsString());
+            }
+            catch(RuntimeException $rex)
+            {
+                http_response_code(500);
+                print(json_encode([
+                    "error" => get_class($rex),
+                    "errorDescription" => $rex->getMessage(),
+                    "status" => 500,
+                ]));
+                exit(0);
+            }
+            
             http_response_code(500);
             print(json_encode([
                 "error" => get_class($ex),
                 "errorDescription" => $ex->getMessage(),
                 "status" => 500,
             ]));
+            exit(0);
         }
     }
 

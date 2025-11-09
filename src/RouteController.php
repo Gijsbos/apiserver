@@ -3,6 +3,11 @@ declare(strict_types=1);
 
 namespace gijsbos\ApiServer;
 
+use gijsbos\ApiServer\Classes\PathVariable;
+use gijsbos\ApiServer\Classes\RequestHeader;
+use gijsbos\ApiServer\Classes\RequestParam;
+use gijsbos\ApiServer\Interfaces\RouteInterface;
+
 /**
  * RouteController
  */

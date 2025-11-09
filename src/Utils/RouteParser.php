@@ -3,6 +3,9 @@ declare(strict_types=1);
 
 namespace gijsbos\ApiServer\Utils;
 
+use InvalidArgumentException;
+use ReflectionClass;
+use ReflectionMethod;
 use gijsbos\ApiServer\Classes\DeleteRoute;
 use gijsbos\ApiServer\Classes\GetRoute;
 use gijsbos\ApiServer\Classes\LogEnabledClass;
@@ -12,10 +15,6 @@ use gijsbos\ApiServer\Classes\PutRoute;
 use gijsbos\ApiServer\Classes\Route;
 use gijsbos\ApiServer\RouteController;
 use gijsbos\ApiServer\Server;
-use InvalidArgumentException;
-use ReflectionClass;
-use ReflectionMethod;
-
 use function gijsbos\ApiServer\Library\log_debug;
 use function gijsbos\ApiServer\Library\log_info;
 
@@ -24,6 +23,27 @@ use function gijsbos\ApiServer\Library\log_info;
  */
 class RouteParser extends LogEnabledClass
 {
+    private array $cacheFiles;
+
+    /**
+     * __construct
+     */
+    public function __construct()
+    {
+        parent::__construct();
+
+        $this->cacheFiles = [];
+    }
+
+    /**
+     * includeControllers
+     */
+    public static function includeControllers(array $includes)
+    {
+        foreach($includes as $include)
+            include_recursive($include);
+    }
+
     /**
      * getControllerClasses
      */
@@ -77,8 +97,8 @@ class RouteParser extends LogEnabledClass
     {
         $classes = $this->getControllerClasses();
 
-        log_debug("Found \"".count($classes)."\" controller(s)");
-        
+        log_info("Found \"".count($classes)."\" controller(s)");
+
         foreach($classes as $reflection)
         {
             $className = $reflection->getName();
@@ -97,7 +117,7 @@ class RouteParser extends LogEnabledClass
 
                 if($route == false)
                 {
-                    log_info("Skipping method \"$methodName\" in \"$className\", no Route attribute set");
+                    log_debug("Skipping method \"$methodName\" in \"$className\", no Route attribute set");
                     continue;
                 }
                 log_info("Added method (".$route->getRequestMethod().") \"$methodName\" in \"$className\" with path: " . $route->getPath());
@@ -113,10 +133,16 @@ class RouteParser extends LogEnabledClass
                 if(!is_dir(Server::$CACHE_FOLDER."/$method"))
                     mkdir(Server::$CACHE_FOLDER."/$method");
 
-                if(!is_file(Server::$CACHE_FOLDER."/$method/$index"))
-                    file_put_contents(Server::$CACHE_FOLDER."/$method/$index", "", FILE_APPEND);
+                $cacheFileName = Server::$CACHE_FOLDER."/$method/$index";
 
-                file_put_contents(Server::$CACHE_FOLDER."/$method/$index", "$pathPattern $className::$methodName");
+                if(!in_array($cacheFileName, $this->cacheFiles))
+                {
+                    file_put_contents($cacheFileName, ""); // Clear file
+
+                    $this->cacheFiles[] = $cacheFileName;
+                }
+
+                file_put_contents($cacheFileName, "$pathPattern $className::$methodName\n", FILE_APPEND);
             }
         }
     }

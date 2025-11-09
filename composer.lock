@@ -4,8 +4,57 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "8eb03673c1972e8013d8262eb6e5bd64",
+    "content-hash": "ea88c51f1863a10ccc2738065275c55c",
     "packages": [
+        {
+            "name": "gijsbos/extfuncs",
+            "version": "1.0.1",
+            "source": {
+                "type": "git",
+                "url": "https://github.com/Gijsbos/extfuncs.git",
+                "reference": "d5b02eddbda66a0260b8c088a7895f512f370c69"
+            },
+            "dist": {
+                "type": "zip",
+                "url": "https://api.github.com/repos/Gijsbos/extfuncs/zipball/d5b02eddbda66a0260b8c088a7895f512f370c69",
+                "reference": "d5b02eddbda66a0260b8c088a7895f512f370c69",
+                "shasum": ""
+            },
+            "require": {
+                "gijsbos/stringfuncs": "^1.2"
+            },
+            "require-dev": {
+                "phpunit/phpunit": "^5.7 || ^9.0"
+            },
+            "type": "library",
+            "autoload": {
+                "files": [
+                    "src/library.php"
+                ],
+                "psr-4": {
+                    "gijsbos\\extfuncs\\": "src/"
+                }
+            },
+            "notification-url": "https://packagist.org/downloads/",
+            "license": [
+                "MIT"
+            ],
+            "authors": [
+                {
+                    "name": "Gijs and contributors",
+                    "homepage": "https://github.com/gijsbos/extfuncs/graphs/contributors"
+                }
+            ],
+            "description": "PHP Extension Functions",
+            "keywords": [
+                "extfuncs"
+            ],
+            "support": {
+                "issues": "https://github.com/Gijsbos/extfuncs/issues",
+                "source": "https://github.com/Gijsbos/extfuncs/tree/1.0.1"
+            },
+            "time": "2025-11-09T19:32:29+00:00"
+        },
         {
             "name": "gijsbos/http",
             "version": "1.0.1",
@@ -48,6 +97,55 @@
                 "source": "https://github.com/Gijsbos/http/tree/1.0.1"
             },
             "time": "2025-11-09T13:56:23+00:00"
+        },
+        {
+            "name": "gijsbos/logging",
+            "version": "1.0.1",
+            "source": {
+                "type": "git",
+                "url": "https://github.com/Gijsbos/logging.git",
+                "reference": "fe7bc427db1299f9eb0a3ba5d5e087c1d07fe331"
+            },
+            "dist": {
+                "type": "zip",
+                "url": "https://api.github.com/repos/Gijsbos/logging/zipball/fe7bc427db1299f9eb0a3ba5d5e087c1d07fe331",
+                "reference": "fe7bc427db1299f9eb0a3ba5d5e087c1d07fe331",
+                "shasum": ""
+            },
+            "require": {
+                "gijsbos/extfuncs": "^1.0"
+            },
+            "require-dev": {
+                "phpunit/phpunit": "^5.7 || ^9.0"
+            },
+            "type": "library",
+            "autoload": {
+                "files": [
+                    "src/Library.php"
+                ],
+                "psr-4": {
+                    "gijsbos\\Logging\\": "src/"
+                }
+            },
+            "notification-url": "https://packagist.org/downloads/",
+            "license": [
+                "MIT"
+            ],
+            "authors": [
+                {
+                    "name": "Gijs and contributors",
+                    "homepage": "https://github.com/gijsbos/logging/graphs/contributors"
+                }
+            ],
+            "description": "PHP Logging",
+            "keywords": [
+                "logging"
+            ],
+            "support": {
+                "issues": "https://github.com/Gijsbos/logging/issues",
+                "source": "https://github.com/Gijsbos/logging/tree/1.0.1"
+            },
+            "time": "2025-11-09T20:53:24+00:00"
         },
         {
             "name": "gijsbos/php-cli-parser",

@@ -20,9 +20,6 @@
         "phpunit/phpunit": "^10.0"
     },
     "autoload": {
-        "files": [
-            "src/Library.php"
-        ],
         "psr-4": {
             "gijsbos\\ApiServer\\": "src/"
         }
@@ -31,6 +28,7 @@
         "gijsbos/yamlspeed": "^1.0",
         "gijsbos/stringfuncs": "^1.2",
         "gijsbos/php-cli-parser": "^1.0",
-        "gijsbos/http": "^1.0"
+        "gijsbos/http": "^1.0",
+        "gijsbos/logging": "^1.0"
     }
 }
