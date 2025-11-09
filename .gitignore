@@ -1,0 +1,7 @@
+*.code-workspace
+/vendor/
+.DS_Store
+.phpunit.result.cache
+cache
+var
+logs

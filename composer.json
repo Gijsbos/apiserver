@@ -1,0 +1,36 @@
+{
+    "name": "gijsbos/apiserver",
+    "description": "API Server",
+    "keywords": [
+        "apiserver",
+        "api server",
+        "api",
+        "php api"
+    ],
+    "type": "library",
+    "license": "MIT",
+    "version": "1.0.0",
+    "authors": [
+        {
+            "name": "Gijs and contributors",
+            "homepage": "https://github.com/gijsbos/apiserver/graphs/contributors"
+        }
+    ],
+    "require-dev": {
+        "phpunit/phpunit": "^10.0"
+    },
+    "autoload": {
+        "files": [
+            "src/Library.php"
+        ],
+        "psr-4": {
+            "gijsbos\\ApiServer\\": "src/"
+        }
+    },
+    "require": {
+        "gijsbos/yamlspeed": "^1.0",
+        "gijsbos/stringfuncs": "^1.2",
+        "gijsbos/php-cli-parser": "^1.0",
+        "gijsbos/http": "^1.0"
+    }
+}
