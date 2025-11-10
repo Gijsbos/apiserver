@@ -75,16 +75,16 @@
         },
         {
             "name": "gijsbos/extfuncs",
-            "version": "1.1.0",
+            "version": "1.1.2",
             "source": {
                 "type": "git",
                 "url": "https://github.com/Gijsbos/extfuncs.git",
-                "reference": "86167e3af0a26097c3739c423581b131239c8cd5"
+                "reference": "f9688e1938ee5847a85ff7d214ef513d72f9afc9"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/Gijsbos/extfuncs/zipball/86167e3af0a26097c3739c423581b131239c8cd5",
-                "reference": "86167e3af0a26097c3739c423581b131239c8cd5",
+                "url": "https://api.github.com/repos/Gijsbos/extfuncs/zipball/f9688e1938ee5847a85ff7d214ef513d72f9afc9",
+                "reference": "f9688e1938ee5847a85ff7d214ef513d72f9afc9",
                 "shasum": ""
             },
             "require": {
@@ -119,9 +119,9 @@
             ],
             "support": {
                 "issues": "https://github.com/Gijsbos/extfuncs/issues",
-                "source": "https://github.com/Gijsbos/extfuncs/tree/1.1.0"
+                "source": "https://github.com/Gijsbos/extfuncs/tree/1.1.2"
             },
-            "time": "2025-11-09T21:56:05+00:00"
+            "time": "2025-11-10T09:27:12+00:00"
         },
         {
             "name": "gijsbos/http",

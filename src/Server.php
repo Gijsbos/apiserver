@@ -3,12 +3,16 @@ declare(strict_types=1);
 
 namespace gijsbos\ApiServer;
 
+use Attribute;
 use Exception;
 use RuntimeException;
 use Throwable;
 use TypeError;
 
 use gijsbos\ApiServer\Classes\RequestHeader;
+use gijsbos\ApiServer\Classes\ReturnFilter;
+use gijsbos\ApiServer\Classes\Route;
+use gijsbos\ApiServer\Classes\RouteParam;
 use gijsbos\Http\Exceptions\ForbiddenException;
 use gijsbos\Http\Exceptions\HTTPRequestException;
 use gijsbos\Http\Exceptions\ResourceNotFoundException;
@@ -17,6 +21,8 @@ use gijsbos\ApiServer\Utils\ArrayToXmlParser;
 use gijsbos\ApiServer\Utils\RouteMethodParamsFactory;
 use gijsbos\ApiServer\Utils\RouteParser;
 use gijsbos\Logging\Classes\LogEnabledClass;
+use ReflectionAttribute;
+use ReflectionClass;
 
 use function gijsbos\Logging\Library\log_error;
 
@@ -155,6 +161,14 @@ class Server extends LogEnabledClass
     }
 
     /**
+     * extractRouteAttributes
+     */
+    private function extractRouteAttributes(Route $route)
+    {
+        return array_values(array_filter($route->getReflectionClassMethod()->getAttributes(), fn($a) => !is_subclass_of($a->getName(), Route::class)));
+    }
+
+    /**
      * parseRoute
      */
     private function parseRoute(string $classMethod, array $pathPatternMatches = [])
@@ -174,6 +188,9 @@ class Server extends LogEnabledClass
         $route->setClassName($className);
         $route->setMethodName($methodName);
         $route->setRequestURI($this->requestURI);
+
+        // Add attributes
+        $route->setAttributes($a = $this->extractRouteAttributes($route));
 
         // Init path variables
         $pathVariableNames = $route->getPathVariableNames();
@@ -251,14 +268,47 @@ class Server extends LogEnabledClass
     }
 
     /**
+     * applyReturnFilter
+     */
+    private function applyReturnFilter(Route $route, array $returnData)
+    {
+        if($route->hasAttribute(ReturnFilter::class))
+        {
+            $attributes = $route->getAttributes(ReturnFilter::class);
+
+            $returnFilter = count($attributes) > 0 ? reset($attributes) : null;
+
+            if($returnFilter instanceof ReflectionAttribute)
+            {
+                $returnFilter = $returnFilter->newInstance();
+
+                if($returnFilter instanceof ReturnFilter)
+                    $returnData = $returnFilter->applyFilter($returnData);
+            }
+        }
+
+        return $returnData;
+    }
+
+    /**
      * executeRoute
      */
     public function executeRoute(RouteInterface $route)
     {
         $className = $route->getClassName();
         $methodName = $route->getMethodName();
+
+        // Create controller
         $controller = new $className($this);
-        return $controller->$methodName(...((new RouteMethodParamsFactory())->generateMethodParams($methodName, $className, $route)));
+
+        // Execute route
+        $returnData = $controller->$methodName(...((new RouteMethodParamsFactory())->generateMethodParams($methodName, $className, $route)));
+
+        // Apply filter
+        $returnData = $this->applyReturnFilter($route, $returnData);
+
+        // Apply return filter if applicable
+        return $returnData;
     }
 
     /**

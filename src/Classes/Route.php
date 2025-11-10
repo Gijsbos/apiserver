@@ -23,6 +23,7 @@ class Route implements RouteInterface
     private null|string $requestURI;
     private null|string $className;
     private null|string $methodName;
+    private null|array $attributes;
     private null|array $routeParams;
     private null|Server $server;
 
@@ -36,6 +37,7 @@ class Route implements RouteInterface
         $this->pathPattern = "";
         $this->pathVariableNames = null;
         $this->pathVariables = null;
+        $this->attributes = [];
         $this->routeParams = [];
     }
 
@@ -77,6 +79,33 @@ class Route implements RouteInterface
     public function setServer(Server $server) : void
     {
         $this->server = $server;
+    }
+
+    /**
+     * setAttributes
+     */
+    public function setAttributes(array $attributes) : void
+    {
+        $this->attributes = $attributes;
+    }
+
+    /**
+     * getAttributes
+     */
+    public function getAttributes(?string $name = null)
+    {
+        if(is_string($name))
+            return array_filter($this->attributes, fn($a) => $a->getName() == $name);
+
+        return $this->attributes;
+    }
+
+    /**
+     * hasAttribute
+     */
+    public function hasAttribute(string $name) : bool
+    {
+        return count($this->getAttributes($name)) > 0;
     }
 
     /**
