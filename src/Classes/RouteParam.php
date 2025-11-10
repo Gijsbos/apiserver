@@ -18,6 +18,7 @@ class RouteParam implements RouteParamInterface
     public mixed $min = null;
     public mixed $max = null;
     public null|string $pattern = null;
+    public null|array $values = null;
     public bool $required = false;
     public array $opts = [];
 
@@ -26,6 +27,7 @@ class RouteParam implements RouteParamInterface
         $this->min = @$opts["min"];
         $this->max = @$opts["max"];
         $this->pattern = @$opts["pattern"];
+        $this->values = @$opts["values"];
         $this->required = @$opts["required"] ?? true;
     }
 
@@ -57,6 +59,11 @@ class RouteParam implements RouteParamInterface
     public function getPattern()
     {
         return $this->pattern;
+    }
+
+    public function getValues()
+    {
+        return $this->values;
     }
 
     public function isRequired()

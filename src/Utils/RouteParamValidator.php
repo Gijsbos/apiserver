@@ -14,6 +14,26 @@ abstract class RouteParamValidator
     const WORD_PATTERN = "/^\w+$/";
     const URI_PATTERN = "/^https?:\/\//";
 
+    public static function getTypeFromValue($value)
+    {
+        if(is_string($value))
+        {
+            if(is_numeric($value))
+            {
+                if(strpos($value, ".") !== false)
+                {
+                    return "double";
+                }
+                else
+                {
+                    return "int";
+                }
+            }
+        }
+
+        return "string";
+    }
+
     public static function validate(RouteParam $p)
     {
         if($p->value == null)
@@ -24,7 +44,15 @@ abstract class RouteParamValidator
                 return true;
         }
 
-        switch($p->type)
+        if(is_array($p->values))
+        {
+            if(!in_array($p->value, $p->values))
+                throw new BadRequestException($p->name."ValueInvalid", "Parameter {$p->name} value does not contain " . implode("|", $p->values));
+        }
+
+        $type = is_string($p->type) ? $p->type : self::getTypeFromValue($p->value);
+
+        switch($type)
         {
             case "int":
             case "float":

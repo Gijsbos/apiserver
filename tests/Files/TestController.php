@@ -19,7 +19,7 @@ class TestController extends RouteController
      */
     #[GetRoute('/test/{id}/')]
     public function getTest(
-        PathVariable|float $id = new PathVariable(["min" => 0, "max" => 4, "required" => false]),
+        PathVariable|int $id = new PathVariable(["min" => 0, "max" => 4, "required" => false]),
         RequestParam|string $name = new RequestParam(["min" => 0, "max" => 10, "pattern" => "/^[a-z]+$/", "required" => false]),
     )
     {
