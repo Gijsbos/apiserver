@@ -3,16 +3,15 @@ declare(strict_types=1);
 
 namespace gijsbos\ApiServer\Utils;
 
-use ReflectionMethod;
+use ReflectionNamedType;
 use ReflectionUnionType;
 use RuntimeException;
 use ReflectionParameter;
-use gijsbos\ApiServer\RouteController;
 use gijsbos\ApiServer\Classes\PathVariable;
 use gijsbos\ApiServer\Classes\RequestHeader;
 use gijsbos\ApiServer\Classes\RequestParam;
 use gijsbos\ApiServer\Classes\Route;
-use gijsbos\ApiServer\Interfaces\RouteInterface;
+use gijsbos\ApiServer\Classes\RouteParam;
 
 /**
  * RouteMethodParamsFactory
@@ -21,6 +20,57 @@ class RouteMethodParamsFactory
 {
     public function __construct()
     { }
+
+    /**
+     * getDataFromReflectionNamedType
+     */
+    private function getDataFromReflectionNamedType(ReflectionNamedType $type, null|string &$primitiveType = null)
+    {
+        $typeName = $type->getName();
+
+        if(class_exists($typeName))
+        {
+            if(is_subclass_of($typeName, RouteParam::class))
+            {
+                return $type->getName();
+            }
+        }
+        else
+        {
+            $primitiveType = $type->getName();
+        }
+
+        return null;
+    }
+    /**
+     * getRouteParamClassFromTypes
+     */
+    private function getRouteParamClassFromParameter(ReflectionParameter $parameter, null|string &$primitiveType = null)
+    {
+        $type = $parameter->getType();
+
+        if($type instanceof ReflectionUnionType)
+        {
+            $routeParamClass = null;
+
+            foreach($type->getTypes() as $type)
+            {
+                $rpc = $this->getDataFromReflectionNamedType($type, $pt);
+
+                if($rpc !== null)
+                    $routeParamClass = $rpc;
+
+                if($pt !== null)
+                    $primitiveType = $pt;
+            }
+
+            return $routeParamClass;
+        }
+        else
+        {
+            return $this->getDataFromReflectionNamedType($type, $primitiveType);
+        }
+    }
 
     /**
      * createRouteParam
@@ -58,76 +108,56 @@ class RouteMethodParamsFactory
     /**
      * generateMethodParams
      */
-    public function generateMethodParams(string $methodName, string $className, RouteInterface $route)
+    public function generateMethodParams(Route $route)
     {
         $params = [];
-
-        $method = new ReflectionMethod($className, $methodName);
-
-        foreach($method->getParameters() as $parameter)
+ 
+        foreach($route->getReflectionClassMethod()->getParameters() as $parameter)
         {
-            // Get param name
             $paramName = $parameter->getName();
 
-            // Get type
-            $type = $parameter->getType();
+            // Get route param className
+            $routeParamClassName = $this->getRouteParamClassFromParameter($parameter, $primitiveType);
 
-            // Multiple types
-            if($type instanceof ReflectionUnionType)
+            // Found Route Param
+            if($routeParamClassName !== null)
             {
-                $type = array_map(fn($t) => $t->getName(), $type->getTypes());
+                // Create instance with value
+                $routeParam = $this->createRouteParam($parameter, $routeParamClassName, $paramName, $route, $primitiveType);
+
+                // Set default value
+                if($routeParam->value == null)
+                    $routeParam->value = $routeParam->default;
+
+                // Validate param
+                RouteParamValidator::validate($routeParam);
+
+                // Add param to route
+                $route->addRouteParam($routeParam);
+                
+                // Primitive type set
+                if($primitiveType !== null)
+                {
+                    $params[$paramName] = match($primitiveType)
+                    {
+                        "string" => strval($routeParam->value),
+                        "int" => intval($routeParam->value),
+                        "float" => floatval($routeParam->value),
+                        "double" => doubleval($routeParam->value),
+                        "bool" => boolval($routeParam->value),
+                        "mixed" => $routeParam->value,
+                    };
+                }
+
+                // Only RouteParam
+                else
+                {
+                    $params[$paramName] = $routeParam->value; // Set value
+                }
             }
             else
             {
-                $type = $type->getName();
-            }
-
-            // Multiple types
-            if(is_array($type))
-            {
-                $routeParamClasses = array_filter($type, fn($t) => in_array($t, RouteController::CONTROLLER_METHOD_PARAM_TYPES));
-
-                if(count($routeParamClasses) > 1)
-                    throw new RuntimeException("Cannot use multiple api method parameter types, got " . implode(", ", $routeParamClasses));
-                
-                if(count($routeParamClasses) == 1)
-                {
-                    $routeParamClass = reset($routeParamClasses);
-
-                    $primitiveTypes = array_filter($type, fn($t) => !in_array($t, RouteController::CONTROLLER_METHOD_PARAM_TYPES));
-
-                    $primitiveType = count($primitiveTypes) == 1 ? reset($primitiveTypes) : null;
-
-                    $routeParam = $this->createRouteParam($parameter, $routeParamClass, $paramName, $route, $primitiveType);
-
-                    $route->addRouteParam($routeParam);
-                    
-                    if(count($primitiveTypes) > 0)
-                    {
-                        if(count($primitiveTypes) > 1)
-                            throw new RuntimeException("Cannot use multiple primitive types, got " . implode(", ", $primitiveTypes));
-
-                        $params[$paramName] = match(reset($primitiveTypes))
-                        {
-                            "string" => strval($routeParam->value),
-                            "int" => intval($routeParam->value),
-                            "float" => floatval($routeParam->value),
-                            "double" => doubleval($routeParam->value),
-                            "bool" => boolval($routeParam->value),
-                            "mixed" => $routeParam->value,
-                        };
-                    }
-                    else
-                    {
-                        $params[$paramName] = $routeParam; // Sets the param as value, requires the user to use ->value
-                    }
-
-                    RouteParamValidator::validate($routeParam);
-                }
-                else
-                {
-                    $params[$paramName] = null; // Not set
-                }
+                $params[$paramName] = null;
             }
         }
 

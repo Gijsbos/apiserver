@@ -3,16 +3,15 @@ declare(strict_types=1);
 
 namespace gijsbos\ApiServer;
 
-use Attribute;
 use Exception;
 use RuntimeException;
 use Throwable;
 use TypeError;
+use ReflectionAttribute;
 
 use gijsbos\ApiServer\Classes\RequestHeader;
 use gijsbos\ApiServer\Classes\ReturnFilter;
 use gijsbos\ApiServer\Classes\Route;
-use gijsbos\ApiServer\Classes\RouteParam;
 use gijsbos\Http\Exceptions\ForbiddenException;
 use gijsbos\Http\Exceptions\HTTPRequestException;
 use gijsbos\Http\Exceptions\ResourceNotFoundException;
@@ -21,8 +20,6 @@ use gijsbos\ApiServer\Utils\ArrayToXmlParser;
 use gijsbos\ApiServer\Utils\RouteMethodParamsFactory;
 use gijsbos\ApiServer\Utils\RouteParser;
 use gijsbos\Logging\Classes\LogEnabledClass;
-use ReflectionAttribute;
-use ReflectionClass;
 
 use function gijsbos\Logging\Library\log_error;
 
@@ -40,6 +37,7 @@ class Server extends LogEnabledClass
     private null|float $requestStartTime;
     private null|float $requestEndTime;
     private bool $requireHttps;
+    private bool $escapeResult;
     private bool $addRequestTime;
 
     /**
@@ -56,6 +54,7 @@ class Server extends LogEnabledClass
         $this->requestStartTime = microtime(true); // Keep request time
         $this->requestEndTime = null;
         $this->requireHttps = array_key_exists("requireHttps", $opts) ? boolval($opts["requireHttps"]) : false;
+        $this->escapeResult = array_key_exists("escapeResult", $opts) ? boolval($opts["escapeResult"]) : true;
         $this->addRequestTime = array_key_exists("addRequestTime", $opts) ? boolval($opts["addRequestTime"]) : false;
 
         $this->setLogOutput("file");
@@ -291,6 +290,23 @@ class Server extends LogEnabledClass
     }
 
     /**
+     * applyEscapeResult
+     */
+    private function applyEscapeResult(array $data)
+    {
+        if($this->escapeResult)
+        {
+            array_walk_recursive($data, function(&$value, $key)
+            {
+                if(is_string($value))
+                    $value = htmlspecialchars($value);
+            });
+        }
+
+        return $data;
+    }
+
+    /**
      * executeRoute
      */
     public function executeRoute(RouteInterface $route)
@@ -302,10 +318,13 @@ class Server extends LogEnabledClass
         $controller = new $className($this);
 
         // Execute route
-        $returnData = $controller->$methodName(...((new RouteMethodParamsFactory())->generateMethodParams($methodName, $className, $route)));
+        $returnData = $controller->$methodName(...((new RouteMethodParamsFactory())->generateMethodParams($route)));
 
         // Apply filter
         $returnData = $this->applyReturnFilter($route, $returnData);
+
+        // Escape result for safety
+        $returnData = $this->applyEscapeResult($returnData);
 
         // Apply return filter if applicable
         return $returnData;

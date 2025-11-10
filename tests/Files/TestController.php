@@ -21,12 +21,12 @@ class TestController extends RouteController
     #[GetRoute('/test/{id}/')]
     #[ReturnFilter(['name','id'])]
     public function getTest(
-        PathVariable|int $id = new PathVariable(["min" => 0, "max" => 4, "required" => false]),
-        RequestParam|string $name = new RequestParam(["min" => 0, "max" => 10, "pattern" => "/^[a-z]+$/", "required" => false]),
+        PathVariable|string $id = new PathVariable(["min" => 0, "max" => 4, "required" => false]),
+        RequestParam|string $name = new RequestParam(["min" => 0, "max" => 10, "pattern" => "/^[a-z]+$/", "required" => false, "default" => "john"]),
     )
     {
         return [
-            "id" => $id,
+            "id" => "<$id>",
             "name" => $name,
         ];
     }

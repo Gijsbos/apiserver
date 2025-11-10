@@ -20,6 +20,7 @@ class RouteParam implements RouteParamInterface
     public null|string $pattern = null;
     public null|array $values = null;
     public bool $required = false;
+    public mixed $default = null;
     public array $opts = [];
 
     public function __construct(array $opts = [])
@@ -29,6 +30,7 @@ class RouteParam implements RouteParamInterface
         $this->pattern = @$opts["pattern"];
         $this->values = @$opts["values"];
         $this->required = @$opts["required"] ?? true;
+        $this->default = @$opts["default"];
     }
 
     public function getName()
@@ -69,6 +71,11 @@ class RouteParam implements RouteParamInterface
     public function isRequired()
     {
         return $this->required;
+    }
+
+    public function getDefault()
+    {
+        return $this->default;
     }
 
     public function getOpts()
