@@ -5,7 +5,9 @@ namespace gijsbos\ApiServer\Classes;
 
 use Attribute;
 use gijsbos\ApiServer\Interfaces\RouteInterface;
+use gijsbos\ApiServer\Interfaces\RouteParamInterface;
 use gijsbos\ApiServer\Server;
+use ReflectionMethod;
 
 /**
  * Route
@@ -21,6 +23,7 @@ class Route implements RouteInterface
     private null|string $requestURI;
     private null|string $className;
     private null|string $methodName;
+    private null|array $routeParams;
     private null|Server $server;
 
     /**
@@ -33,6 +36,7 @@ class Route implements RouteInterface
         $this->pathPattern = "";
         $this->pathVariableNames = null;
         $this->pathVariables = null;
+        $this->routeParams = [];
     }
 
     /**
@@ -73,6 +77,22 @@ class Route implements RouteInterface
     public function setServer(Server $server) : void
     {
         $this->server = $server;
+    }
+
+    /**
+     * addRouteParam
+     */
+    public function addRouteParam(RouteParamInterface $routeParam) : void
+    {
+        $this->routeParams[] = $routeParam;
+    }
+
+    /**
+     * getRouteParams
+     */
+    public function getRouteParams() : array
+    {
+        return $this->routeParams;
     }
 
     /**
@@ -172,6 +192,14 @@ class Route implements RouteInterface
     public function setMethodName(string $methodName) : void
     {
         $this->methodName = $methodName;
+    }
+
+    /**
+     * getReflectionClassMethod
+     */
+    public function getReflectionClassMethod() : ReflectionMethod
+    {
+        return new ReflectionMethod($this->className, $this->methodName);
     }
 
     /**

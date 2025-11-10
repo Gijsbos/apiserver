@@ -25,7 +25,8 @@ use function gijsbos\Logging\Library\log_error;
  */
 class Server extends LogEnabledClass
 {
-    public static string $CACHE_FOLDER = "./cache/api-speed";
+    public static string $CACHE_FOLDER = "./cache/apiserver";
+
     private string $requestMethod;
     private string $requestURI;
     private string $pathPrefix;
@@ -44,7 +45,7 @@ class Server extends LogEnabledClass
 
         $this->pathPrefix = is_string(@$opts["pathPrefix"]) ? str_must_start_end_with($opts["pathPrefix"], "/") : "";
         $this->requestMethod = @$_SERVER["REQUEST_METHOD"];
-        $this->requestURI = str_must_start_with(strlen($this->pathPrefix) > 0 ? str_must_not_start_with($_SERVER["REQUEST_URI"], $this->pathPrefix) : $_SERVER["REQUEST_URI"], "/");
+        $this->requestURI = $this->extractRequestURI();
         $this->route = null; // Keep route when resolved
         $this->requestStartTime = microtime(true); // Keep request time
         $this->requestEndTime = null;
@@ -52,6 +53,18 @@ class Server extends LogEnabledClass
         $this->addRequestTime = array_key_exists("addRequestTime", $opts) ? boolval($opts["addRequestTime"]) : false;
 
         $this->setLogOutput("file");
+    }
+
+    /**
+     * extractRequestURI
+     */
+    private function extractRequestURI()
+    {
+        $requestURI = str_must_start_with(strlen($this->pathPrefix) > 0 ? str_must_not_start_with($_SERVER["REQUEST_URI"], $this->pathPrefix) : $_SERVER["REQUEST_URI"], "/");
+
+        $parts = parse_url($requestURI);
+
+        return @$parts["path"] ?? "/";
     }
 
     /**
@@ -245,7 +258,7 @@ class Server extends LogEnabledClass
         $className = $route->getClassName();
         $methodName = $route->getMethodName();
         $controller = new $className($this);
-        return $controller->$methodName(...(new RouteMethodParamsFactory())->generateMethodParams($methodName, $className, $route));
+        return $controller->$methodName(...((new RouteMethodParamsFactory())->generateMethodParams($methodName, $className, $route)));
     }
 
     /**
@@ -275,25 +288,37 @@ class Server extends LogEnabledClass
     /**
      * listen
      */
-    public function listen()
+    public function listen(bool $printReturnValue = true)
     {
         try
         {
+            // Verify if https is required
             $this->verifyHttps();
 
+            // Lookup route
             $this->route = $this->matchRoute();
 
+            // Not found
             if($this->route === false)
                 throw new ResourceNotFoundException("routeNotFound", "Resource could not be found");
 
+            // Execute route
             $result = $this->executeRoute($this->route);
 
+            // Record request time
             $this->requestEndTime = microtime(true);
 
+            // Include inresult
             if($this->addRequestTime)
                 $result["time"] = $this->getRequestTime();
 
-            $this->printReturnValue($result);
+            // Print result
+            if($printReturnValue)
+                $this->printReturnValue($result);
+
+            // Return result
+            else
+                return $result;
         }
         catch(HTTPRequestException $ex)
         {

@@ -16,4 +16,6 @@ interface RouteInterface
     public function getPathVariableNames(): array;
     public function getPathVariables();
     public function setPathVariables(array $pathVariables): void;
+    public function addRouteParam(RouteParamInterface $routeParam): void;
+    public function getRouteParams(): array;
 }

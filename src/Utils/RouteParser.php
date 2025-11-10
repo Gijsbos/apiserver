@@ -12,6 +12,7 @@ use gijsbos\ApiServer\Classes\OptionsRoute;
 use gijsbos\ApiServer\Classes\PostRoute;
 use gijsbos\ApiServer\Classes\PutRoute;
 use gijsbos\ApiServer\Classes\Route;
+use gijsbos\ApiServer\Interfaces\RouteInterface;
 use gijsbos\ApiServer\RouteController;
 use gijsbos\ApiServer\Server;
 use gijsbos\Logging\Classes\LogEnabledClass;
@@ -24,6 +25,15 @@ use function gijsbos\Logging\Library\log_info;
  */
 class RouteParser extends LogEnabledClass
 {
+    const ROUTE_CLASSES = [
+        Route::class,
+        GetRoute::class,
+        PostRoute::class,
+        PutRoute::class,
+        DeleteRoute::class,
+        OptionsRoute::class
+    ];
+
     private array $cacheFiles;
 
     /**
@@ -74,11 +84,9 @@ class RouteParser extends LogEnabledClass
                 throw new InvalidArgumentException(__METHOD__ . " failed: Argument 2 'className' must not be null when argument 1 is a string");
             else
                 $method = new ReflectionMethod($className, $method);
-        }   
+        }
 
-        $classNames = [Route::class, GetRoute::class, PostRoute::class, PutRoute::class, DeleteRoute::class, OptionsRoute::class];
-
-        foreach($classNames as $className)
+        foreach(self::ROUTE_CLASSES as $className)
         {
             if(count($method->getAttributes($className)) > 0)
             {
@@ -89,6 +97,61 @@ class RouteParser extends LogEnabledClass
         }
 
         return false;
+    }
+
+    /**
+     * addToCache
+     */
+    private function addToCache(string $className, string $methodName, RouteInterface $route)
+    {
+        $method = $route->getRequestMethod();
+        $path = str_must_start_with($route->getPath(), "/");
+        $pathPattern = $route->getPathPattern();
+        $index = substr_count($path, "/");
+
+        if(!is_dir(Server::$CACHE_FOLDER))
+            mkdir(Server::$CACHE_FOLDER, 0777, true);
+
+        if(!is_dir(Server::$CACHE_FOLDER."/$method"))
+            mkdir(Server::$CACHE_FOLDER."/$method");
+
+        $cacheFileName = Server::$CACHE_FOLDER."/$method/$index";
+
+        if(!in_array($cacheFileName, $this->cacheFiles))
+        {
+            file_put_contents($cacheFileName, ""); // Clear file
+
+            $this->cacheFiles[] = $cacheFileName;
+        }
+
+        file_put_contents($cacheFileName, "$pathPattern $className::$methodName\n", FILE_APPEND);
+    }
+
+    /**
+     * parseMethods
+     */
+    private function parseMethods(string $className, array $methods)
+    {
+        log_debug("Parsing \"$className\", found \"".count($methods)."\" controller methods");
+
+        foreach($methods as $method)
+        {
+            $methodName = $method->getName();
+
+            log_debug("Parsing method \"$methodName\"");
+
+            $route = $this->getRoute($method);
+
+            if($route == false)
+            {
+                log_debug("Skipping method \"$methodName\" in \"$className\", no Route attribute set");
+                continue;
+            }
+
+            log_info("Add method (".$route->getRequestMethod().") \"$methodName\" in \"$className\" with path: " . $route->getPath());
+
+            $this->addToCache($className, $methodName, $route);
+        }
     }
 
     /**
@@ -105,46 +168,16 @@ class RouteParser extends LogEnabledClass
             $className = $reflection->getName();
 
             $methods = array_filter($reflection->getMethods(), fn($r) => $r->isPublic());
-
-            log_debug("Parsing \"$className\", found \"".count($methods)."\" controller methods");
             
-            foreach($methods as $method)
-            {
-                $methodName = $method->getName();
-
-                log_debug("Parsing method \"$methodName\"");
-
-                $route = $this->getRoute($method);
-
-                if($route == false)
-                {
-                    log_debug("Skipping method \"$methodName\" in \"$className\", no Route attribute set");
-                    continue;
-                }
-                log_info("Added method (".$route->getRequestMethod().") \"$methodName\" in \"$className\" with path: " . $route->getPath());
-
-                $method = $route->getRequestMethod();
-                $path = str_must_start_with($route->getPath(), "/");
-                $pathPattern = $route->getPathPattern();
-                $index = substr_count($path, "/");
-
-                if(!is_dir(Server::$CACHE_FOLDER))
-                    mkdir(Server::$CACHE_FOLDER, 0777, true);
-
-                if(!is_dir(Server::$CACHE_FOLDER."/$method"))
-                    mkdir(Server::$CACHE_FOLDER."/$method");
-
-                $cacheFileName = Server::$CACHE_FOLDER."/$method/$index";
-
-                if(!in_array($cacheFileName, $this->cacheFiles))
-                {
-                    file_put_contents($cacheFileName, ""); // Clear file
-
-                    $this->cacheFiles[] = $cacheFileName;
-                }
-
-                file_put_contents($cacheFileName, "$pathPattern $className::$methodName\n", FILE_APPEND);
-            }
+            $this->parseMethods($className, $methods);
         }
+    }
+
+    /**
+     * run
+     */
+    public static function run(bool $verbose = false)
+    {
+        (new RouteParser())->setLogLevel($verbose ? "info" : "")->parseControllerFiles();
     }
 }

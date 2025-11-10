@@ -6,15 +6,8 @@ namespace gijsbos\ApiServer\Classes;
 /**
  * RequestHeader
  */
-class RequestHeader
+class RequestHeader extends RouteParam
 {
-    public mixed $value;
-
-    public function __construct(public string $name)
-    {
-        $this->value = self::getHeader($name);
-    }
-
     /**
      * getHeader
      */
