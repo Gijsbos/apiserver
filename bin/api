@@ -9,9 +9,12 @@ if(is_file("src/autoload.php"))
 else
     include_once "./vendor/autoload.php";
 
-use CommandLineParser\CommandLineParser;
+use gijsbos\CLIParser\CLIParser\CommandLineParser;
 use gijsbos\ApiServer\Utils\RouteParser;
 
+/**
+ * APICLI
+ */
 final class APICLI
 {
     const VERSION = "1.0.0";

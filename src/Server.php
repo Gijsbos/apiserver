@@ -466,7 +466,7 @@ class Server extends LogEnabledClass
         }
         catch(HTTPRequestException $ex)
         {
-            $ex->printJson();
+            $ex->sendJson();
         }
         catch(RuntimeException | Exception | TypeError | Throwable $ex)
         {
@@ -481,7 +481,7 @@ class Server extends LogEnabledClass
                 print(json_encode([
                     "error" => get_class($rex),
                     "errorDescription" => $rex->getMessage(),
-                    "status" => 500,
+                    "statusCode" => 500,
                 ]));
                 exit(0);
             }
@@ -490,7 +490,7 @@ class Server extends LogEnabledClass
             print(json_encode([
                 "error" => get_class($ex),
                 "errorDescription" => $ex->getMessage(),
-                "status" => 500,
+                "statusCode" => 500,
             ]));
             exit(0);
         }

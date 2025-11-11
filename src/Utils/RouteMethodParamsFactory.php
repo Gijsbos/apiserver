@@ -12,6 +12,7 @@ use gijsbos\ApiServer\Classes\RequestHeader;
 use gijsbos\ApiServer\Classes\RequestParam;
 use gijsbos\ApiServer\Classes\Route;
 use gijsbos\ApiServer\Classes\RouteParam;
+use gijsbos\Http\Exceptions\BadRequestException;
 
 /**
  * RouteMethodParamsFactory
