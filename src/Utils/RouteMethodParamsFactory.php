@@ -45,13 +45,14 @@ class RouteMethodParamsFactory
     /**
      * getRouteParamClassFromTypes
      */
-    private function getRouteParamClassFromParameter(ReflectionParameter $parameter, null|string &$primitiveType = null)
+    private function getRouteParamClassFromParameter(ReflectionParameter $parameter, null|string &$primitiveType = null, null|bool &$canBeNull = null)
     {
         $type = $parameter->getType();
 
         if($type instanceof ReflectionUnionType)
         {
             $routeParamClass = null;
+            $canBeNull = false;
 
             foreach($type->getTypes() as $type)
             {
@@ -60,7 +61,10 @@ class RouteMethodParamsFactory
                 if($rpc !== null)
                     $routeParamClass = $rpc;
 
-                if($pt !== null)
+                if($pt === 'null')
+                    $canBeNull = true;
+
+                else if($pt !== null)
                     $primitiveType = $pt;
             }
 
@@ -117,7 +121,7 @@ class RouteMethodParamsFactory
             $paramName = $parameter->getName();
 
             // Get route param className
-            $routeParamClassName = $this->getRouteParamClassFromParameter($parameter, $primitiveType);
+            $routeParamClassName = $this->getRouteParamClassFromParameter($parameter, $primitiveType, $canBeNull);
 
             // Found Route Param
             if($routeParamClassName !== null)
@@ -129,14 +133,18 @@ class RouteMethodParamsFactory
                 if($routeParam->value == null)
                     $routeParam->value = $routeParam->default;
 
+                // Check if value can be null
+                if(!$canBeNull && $routeParam->value == null)
+                    $routeParam->value = "";
+
                 // Validate param
                 RouteParamValidator::validate($routeParam);
 
                 // Add param to route
                 $route->addRouteParam($routeParam);
-                
+
                 // Primitive type set
-                if($primitiveType !== null)
+                if($routeParam->value !== null && $primitiveType !== null)
                 {
                     $params[$paramName] = match($primitiveType)
                     {
