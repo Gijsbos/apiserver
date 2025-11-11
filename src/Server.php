@@ -39,6 +39,7 @@ class Server extends LogEnabledClass
     private null|float $requestEndTime;
     private bool $requireHttps;
     private bool $escapeResult;
+    private bool $addServerTime;
     private bool $addRequestTime;
     private string $dateTimeFormat;
 
@@ -57,6 +58,7 @@ class Server extends LogEnabledClass
         $this->requestEndTime = null;
         $this->requireHttps = array_key_exists("requireHttps", $opts) ? boolval($opts["requireHttps"]) : false;
         $this->escapeResult = array_key_exists("escapeResult", $opts) ? boolval($opts["escapeResult"]) : true;
+        $this->addServerTime = array_key_exists("addServerTime", $opts) ? boolval($opts["addServerTime"]) : false;
         $this->addRequestTime = array_key_exists("addRequestTime", $opts) ? boolval($opts["addRequestTime"]) : false;
         $this->dateTimeFormat = @$opts["dateTimeFormat"] ?? "ISO8601";
 
@@ -134,7 +136,18 @@ class Server extends LogEnabledClass
     /**
      * getRequestTime
      */
-    public function getRequestTime()
+    public function getRequestTime() : null|float
+    {
+        if(!isset($_SERVER["REQUEST_TIME_FLOAT"]))
+            return null;
+
+        return microtime(true) - $_SERVER["REQUEST_TIME_FLOAT"];
+    }
+
+    /**
+     * getServerTime
+     */
+    public function getServerTime()
     {
         return ($this->requestEndTime ?? microtime(true)) - $this->requestStartTime;
     }
@@ -308,18 +321,17 @@ class Server extends LogEnabledClass
         if(is_object($data))
             return $this->convertObject($data);
 
-        foreach($data as $key => $value)
+        foreach($data as $key => &$value)
         {
             // Convert object
             if(is_object($value))
-                $data[$key] = $value = $this->convertObject($value);
+                $value = $this->convertObject($value);
 
             // Repeat for every array
             if(is_array($value) || is_object($value))
-                $data[$key] = $this->toArray($value);
+                $value = $this->toArray($value);
         }
 
-        // Return data
         return $data;
     }
 
@@ -432,22 +444,25 @@ class Server extends LogEnabledClass
                 throw new ResourceNotFoundException("routeNotFound", "Resource could not be found");
 
             // Execute route
-            $result = $this->executeRoute($this->route);
+            $response = $this->executeRoute($this->route);
 
             // Record request time
             $this->requestEndTime = microtime(true);
 
-            // Include inresult
+            // Include request time; if response is list, then keys are added to data e.g. {"0": <response>, "requestTime": 0.00764..} will be created
+            if($this->addServerTime)
+                $response["serverTime"] = $this->getServerTime();
+
             if($this->addRequestTime)
-                $result["time"] = $this->getRequestTime();
+                $response["requestTime"] = $this->getRequestTime();
 
             // Print result
             if($printReturnValue)
-                $this->printReturnValue($result);
+                $this->printReturnValue($response);
 
             // Return result
             else
-                return $result;
+                return $response;
         }
         catch(HTTPRequestException $ex)
         {
