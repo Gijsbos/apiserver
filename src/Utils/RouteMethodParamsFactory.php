@@ -77,7 +77,7 @@ class RouteMethodParamsFactory
      */
     private function createRouteParam(ReflectionParameter $parameter, string $routeParamClass, string $name, Route $route, null|string $primitiveType = null)
     {
-        $defaultValue = $parameter->getDefaultValue(); // An object has been provided as default parameter, we use it as base because it might contain options
+        $defaultValue =  $parameter->isDefaultValueAvailable() ? $parameter->getDefaultValue() : null; // An object has been provided as default parameter, we use it as base because it might contain options
 
         switch($routeParamClass)
         {

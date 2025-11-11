@@ -7,6 +7,7 @@ use Exception;
 use RuntimeException;
 use Throwable;
 use TypeError;
+use ReflectionClass;
 use ReflectionAttribute;
 
 use gijsbos\ApiServer\Classes\RequestHeader;
@@ -39,6 +40,7 @@ class Server extends LogEnabledClass
     private bool $requireHttps;
     private bool $escapeResult;
     private bool $addRequestTime;
+    private string $dateTimeFormat;
 
     /**
      * __construct
@@ -56,6 +58,7 @@ class Server extends LogEnabledClass
         $this->requireHttps = array_key_exists("requireHttps", $opts) ? boolval($opts["requireHttps"]) : false;
         $this->escapeResult = array_key_exists("escapeResult", $opts) ? boolval($opts["escapeResult"]) : true;
         $this->addRequestTime = array_key_exists("addRequestTime", $opts) ? boolval($opts["addRequestTime"]) : false;
+        $this->dateTimeFormat = @$opts["dateTimeFormat"] ?? "ISO8601";
 
         $this->setLogOutput("file");
     }
@@ -267,6 +270,60 @@ class Server extends LogEnabledClass
     }
 
     /**
+     * convertObjects
+     */
+    private function convertObject(object $data)
+    {
+        if($data instanceof \DateTime)
+        {
+            $format = $this->dateTimeFormat;
+
+            // Return ISO8601 format
+            if($format == "ISO8601" || $format == "c")
+                return date('c', $data->getTimestamp());
+
+            // Return format string
+            return $data->format($format);
+        }
+        else
+        {
+            $reflectionClass = new ReflectionClass($data);
+
+            // Filter out non-public properties
+            return array_filter((array) $data, function($key) use ($reflectionClass)
+            {
+                if($reflectionClass->hasProperty($key))
+                    return $reflectionClass->getProperty($key)->isPublic();
+                else
+                    return true;
+            }, ARRAY_FILTER_USE_KEY);
+        }
+    }
+
+    /**
+     * toArray
+     */
+    private function toArray($data) : array
+    {
+        if(is_object($data))
+            return $this->convertObject($data);
+
+        foreach($data as $key => $value)
+        {
+            // Convert object
+            if(is_object($value))
+                $data[$key] = $value = $this->convertObject($value);
+
+            // Repeat for every array
+            if(is_array($value) || is_object($value))
+                $data[$key] = $this->toArray($value);
+        }
+
+        // Return data
+        return $data;
+    }
+
+    /**
      * applyReturnFilter
      */
     private function applyReturnFilter(Route $route, array $returnData)
@@ -319,6 +376,9 @@ class Server extends LogEnabledClass
 
         // Execute route
         $returnData = $controller->$methodName(...((new RouteMethodParamsFactory())->generateMethodParams($route)));
+
+        // Turn data into array
+        $returnData = $this->toArray($returnData);
 
         // Apply filter
         $returnData = $this->applyReturnFilter($route, $returnData);
