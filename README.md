@@ -10,7 +10,7 @@
 
 ## Introduction
 
-Lightweight, attribute-driven PHP API Server that simplifies route definition, request validation, and response filtering.  
+Lightweight, attribute-driven PHP API Server that simplifies route definition, request validation, and response filtering. 
 It aims to make building structured REST APIs **clean, fast, and type-safe**, leveraging PHP 8+ attributes.
 
 ---
@@ -60,7 +60,7 @@ Route parameter options can be defined by defining the object inside the paramet
 PathVariable|string $id = new PathVariable(["min" => 0, "max" => 999, "required" => true, "pattern" => "/\d+/", "default" => 1])
 ```
 
-The following options are provided:  
+The following options can be used:  
 - min *int* - minimum value for `int` values, minimum length for `string` values.  
 - max *int* - maximum value for `int` values, maximum length for `string` values.  
 - required *bool* - when true, throws missing error when parameter is not defined (has no effect on PathVariable).  
@@ -85,5 +85,23 @@ class UserController extends RouteController
             "name" => $name,
         ];
     }
+}
+```
+
+### Server Definition
+```
+try
+{
+    $server = new Server([
+        "pathPrefix" => "apiserver/",   // For nested paths
+        "addServerTime" => true,        // Adds server time
+        "addRequestTime" => true,       // Adds request time
+    ]);
+
+    $server->listen();
+}
+catch(RuntimeException | Exception | TypeError | Throwable $ex)
+{
+    print($ex->getMessage());
 }
 ```
