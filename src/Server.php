@@ -190,9 +190,11 @@ class Server extends LogEnabledClass
     {
         [$className, $methodName] = explode("::", $classMethod);
 
+        // Class not found
         if(!class_exists($className))
             throw new RuntimeException("Class \"$className\" not found");
 
+        // Method not found
         if(!method_exists($className, $methodName))
             throw new RuntimeException("Class method \"$methodName\" not found in $className");
 
@@ -216,7 +218,6 @@ class Server extends LogEnabledClass
             {
                 $pathVariables[$name] = $pathPatternMatches[$i+1];
             }
-
             $route->setPathVariables($pathVariables);
         }
 
@@ -378,13 +379,16 @@ class Server extends LogEnabledClass
     /**
      * executeRoute
      */
-    public function executeRoute(RouteInterface $route)
+    public function executeRoute(Route $route)
     {
         $className = $route->getClassName();
         $methodName = $route->getMethodName();
 
         // Create controller
         $controller = new $className($this);
+
+        // ExecuteBeforeRoute
+        $route->executeBeforeRouteMethods();
 
         // Execute route
         $returnData = $controller->$methodName(...((new RouteMethodParamsFactory())->generateMethodParams($route)));

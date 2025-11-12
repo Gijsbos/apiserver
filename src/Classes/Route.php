@@ -232,6 +232,14 @@ class Route implements RouteInterface
     }
 
     /**
+     * getExecuteBeforeRouteMethods
+     */
+    public function executeBeforeRouteMethods() : array
+    {
+        return array_map(fn($executeBeforeRoute) => $executeBeforeRoute->newInstance()->execute($this), array_filter($this->getReflectionClassMethod()->getAttributes(), fn($a) => is_subclass_of($a->getName(), ExecuteBeforeRoute::class)));
+    }
+
+    /**
      * parsePathData
      */
     public function parsePathData(array $params = []) : array

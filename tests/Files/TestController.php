@@ -6,7 +6,9 @@ use gijsbos\ApiServer\Classes\GetRoute;
 use gijsbos\ApiServer\Classes\PathVariable;
 use gijsbos\ApiServer\Classes\PostRoute;
 use gijsbos\ApiServer\Classes\PutRoute;
+use gijsbos\ApiServer\Classes\RequestHeader;
 use gijsbos\ApiServer\Classes\RequestParam;
+use gijsbos\ApiServer\Classes\RequiresAuthorization;
 use gijsbos\ApiServer\Classes\ReturnFilter;
 use gijsbos\ApiServer\RouteController;
 
@@ -76,6 +78,23 @@ class TestController extends RouteController
         return [
             "id" => $id,
             "name" => $name,
+        ];
+    }
+
+    /**
+     * requiresAuthorization
+     */
+    #[GetRoute('/test/authorized')]
+    #[ReturnFilter(['token'])]
+    #[RequiresAuthorization()]
+    public function requiresAuthorization(
+        RequestHeader|string $authorization = new RequestHeader(),
+        PathVariable|int $id = new PathVariable(["min" => 0, "max" => 4, "required" => false]),
+        RequestParam|string $name = new RequestParam(["pattern" => "/^[a-z]+$/", "required" => false]),
+    )
+    {
+        return [
+            "token" => $authorization,
         ];
     }
 }

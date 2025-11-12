@@ -9,12 +9,20 @@ namespace gijsbos\ApiServer\Classes;
 class RequestHeader extends RouteParam
 {
     /**
+     * normalizeHeader
+     *  Normalize header name (e.g. "X-Custom-Header" → "HTTP_X_CUSTOM_HEADER")
+     */
+    private static function normalizeHeader(string $headerName)
+    {
+        return 'HTTP_' . strtoupper(str_replace('-', '_', $headerName));
+    }
+
+    /**
      * getHeader
      */
     public static function getHeader(string $headerName): ?string
     {
-        // Normalize header name (e.g. "X-Custom-Header" → "HTTP_X_CUSTOM_HEADER")
-        $key = 'HTTP_' . strtoupper(str_replace('-', '_', $headerName));
+        $key = self::normalizeHeader($headerName);
 
         // Handle special cases (e.g. Content-Type, Content-Length)
         $specialCases = [
@@ -23,10 +31,18 @@ class RequestHeader extends RouteParam
             'CONTENT_MD5',
         ];
 
+        // remove "HTTP_" prefix for these
         if (in_array($key, array_map(fn($h) => 'HTTP_' . $h, $specialCases))) {
-            $key = substr($key, 5); // remove "HTTP_" prefix for these
+            $key = substr($key, 5); 
         }
 
-        return $_SERVER[$key] ?? null;
+        // Normalize remaining headers
+        $headers = array_merge($_SERVER, array_map_assoc(function($k, $v)
+        {
+            return [self::normalizeHeader($k), $v];
+        }, getallheaders()));
+
+        // Return
+        return @$headers[$key];
     }
 }

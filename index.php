@@ -7,8 +7,9 @@ include_once "tests/Autoload.php";
 try
 {
     $server = new Server([
-        "pathPrefix" => "apiserver/",    // For nested paths
-        "addRequestTime" => true,        // Adds request time
+        "pathPrefix" => "apiserver/",   // For nested paths
+        "addServerTime" => true,        // Adds server time
+        "addRequestTime" => true,       // Adds request time
     ]);
 
     $server->listen();
