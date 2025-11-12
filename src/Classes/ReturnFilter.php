@@ -9,7 +9,7 @@ use Attribute;
  * ReturnFilter
  */
 #[Attribute(Attribute::TARGET_METHOD)]
-class ReturnFilter
+class ReturnFilter extends RouteAttribute
 {
     public function __construct(private array $filter)
     { }

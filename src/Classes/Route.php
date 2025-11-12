@@ -17,15 +17,15 @@ class Route implements RouteInterface
 {
     private string $path;
     private int $status;
-    private string $pathPattern;
+    private string $pathPattern = "";
     private null|array $pathVariableNames;
     private null|array $pathVariables;
-    private null|string $requestURI;
-    private null|string $className;
-    private null|string $methodName;
-    private null|array $attributes;
-    private null|array $routeParams;
-    private null|Server $server;
+    private null|string $requestURI = "";
+    private null|string $className = "";
+    private null|string $methodName = "";
+    private null|array $attributes = [];
+    private null|array $routeParams = [];
+    private null|Server $server = null;
 
     /**
      * __construct

@@ -9,7 +9,7 @@ use Attribute;
  * ExecuteBeforeRoute
  */
 #[Attribute(Attribute::TARGET_METHOD)]
-class ExecuteBeforeRoute
+class ExecuteBeforeRoute extends RouteAttribute
 {
     /**
      * __construct
