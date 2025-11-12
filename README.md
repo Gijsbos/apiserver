@@ -98,7 +98,7 @@ try
     $server = new Server([
         "requireHttps" => false,        // Must use HTTPS or receive error
         "pathPrefix" => "",             // Used for subpaths e.g. localhost/mysubpath/
-        "escapeResult" => true,         // Escaped special characters
+        "escapeResult" => true,         // Escapes special characters
         "addServerTime" => false,       // Adds code execution time
         "addRequestTime" => false,      // Adds total server response time
     ]);
@@ -110,3 +110,16 @@ catch(RuntimeException | Exception | TypeError | Throwable $ex)
     print($ex->getMessage());
 }
 ```
+
+### Caching Routes
+
+Routes paths are cached in the cache folder, you can use the bin/api binary to cache routes.  
+
+```
+./bin/api cache routes -(v)erbose (--autoload <file>)
+```
+
+### Contributions
+
+Contributions are welcome!  
+Please open an issue or submit a pull request following our contribution guidelines.  

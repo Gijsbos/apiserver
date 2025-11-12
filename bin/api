@@ -1,13 +1,21 @@
 #!/usr/bin/env php
 <?php
 
-# Allow overloading of default autoload e.g. when controllers need to be preloaded
-if(is_file("src/autoload.php"))
-    include_once "./src/autoload.php";
-
-# Fallback to vendor autoload
+# Use autoloader through option: --autoload <filePath>
+if(($index = array_search("--autoload", $argv)) && ($autoloadFile = @$argv[$index+1]) !== null)
+{
+    include_once $autoloadFile;
+}
 else
-    include_once "./vendor/autoload.php";
+{
+    # Look for custom overload file
+    if(is_file("src/autoload.php"))
+        include_once "./src/autoload.php";
+
+    # Fallback to vendor autoload
+    else
+        include_once "./vendor/autoload.php";
+}
 
 use gijsbos\CLIParser\CLIParser\CommandLineParser;
 use gijsbos\ApiServer\Utils\RouteParser;
@@ -45,16 +53,10 @@ final class APICLI
                 switch($arg)
                 {
                     case "cache":
-                        $verbose = $command->hasFlag("v");
-                        $logLevel = $command->getOption("logLevel") ?? "info";
-
                         switch($command->getNextArg())
                         {
                             case "routes":
-                                (new RouteParser())
-                                ->setLogLevel(strlen($logLevel) > 0 ? $logLevel : ($verbose ? "info" : ""))
-                                ->setLogOutput("console")
-                                ->parseControllerFiles();
+                                RouteParser::run($command);
                             break;
                         }
                     break;

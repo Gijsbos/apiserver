@@ -15,6 +15,7 @@ use gijsbos\ApiServer\Classes\Route;
 use gijsbos\ApiServer\Interfaces\RouteInterface;
 use gijsbos\ApiServer\RouteController;
 use gijsbos\ApiServer\Server;
+use gijsbos\CLIParser\CLIParser\Command;
 use gijsbos\Logging\Classes\LogEnabledClass;
 
 use function gijsbos\Logging\Library\log_debug;
@@ -39,11 +40,19 @@ class RouteParser extends LogEnabledClass
     /**
      * __construct
      */
-    public function __construct()
+    public function __construct(private string $cacheFolder)
     {
         parent::__construct();
 
         $this->cacheFiles = [];
+    }
+
+    /**
+     * getCacheFolder
+     */
+    public function getCacheFolder() : string
+    {
+        return $this->cacheFolder;
     }
 
     /**
@@ -108,14 +117,15 @@ class RouteParser extends LogEnabledClass
         $path = str_must_start_with($route->getPath(), "/");
         $pathPattern = $route->getPathPattern();
         $index = substr_count($path, "/");
+        $cacheFolder = $this->cacheFolder;
 
-        if(!is_dir(Server::$CACHE_FOLDER))
-            mkdir(Server::$CACHE_FOLDER, 0777, true);
+        if(!is_dir($cacheFolder))
+            mkdir($cacheFolder, 0777, true);
 
-        if(!is_dir(Server::$CACHE_FOLDER."/$method"))
-            mkdir(Server::$CACHE_FOLDER."/$method");
+        if(!is_dir($cacheFolder."/$method"))
+            mkdir($cacheFolder."/$method");
 
-        $cacheFileName = Server::$CACHE_FOLDER."/$method/$index";
+        $cacheFileName = $cacheFolder."/$method/$index";
 
         if(!in_array($cacheFileName, $this->cacheFiles))
         {
@@ -176,8 +186,11 @@ class RouteParser extends LogEnabledClass
     /**
      * run
      */
-    public static function run(bool $verbose = false)
+    public static function run(null|Command $command = null)
     {
-        (new RouteParser())->setLogLevel($verbose ? "info" : "")->parseControllerFiles();
+        (new RouteParser($command?->getOption("cache-folder") ?? Server::$DEFAULT_CACHE_FOLDER))
+        ->setLogLevel($command?->hasFlag("v") ? "info" : "")
+        ->setLogOutput("console")
+        ->parseControllerFiles();
     }
 }

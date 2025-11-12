@@ -29,7 +29,7 @@ use function gijsbos\Logging\Library\log_error;
  */
 class Server extends LogEnabledClass
 {
-    public static string $CACHE_FOLDER = "./cache/apiserver";
+    public static string $DEFAULT_CACHE_FOLDER = "./cache/apiserver";
 
     private string $requestMethod;
     private string $requestURI;
@@ -42,6 +42,7 @@ class Server extends LogEnabledClass
     private bool $addServerTime;
     private bool $addRequestTime;
     private string $dateTimeFormat;
+    private string $cacheFolder;
 
     /**
      * __construct
@@ -61,6 +62,7 @@ class Server extends LogEnabledClass
         $this->addServerTime = array_key_exists("addServerTime", $opts) ? boolval($opts["addServerTime"]) : false;
         $this->addRequestTime = array_key_exists("addRequestTime", $opts) ? boolval($opts["addRequestTime"]) : false;
         $this->dateTimeFormat = @$opts["dateTimeFormat"] ?? "ISO8601";
+        $this->cacheFolder = @$opts["cacheFolder"] ?? self::$DEFAULT_CACHE_FOLDER;
 
         $this->setLogOutput("file");
     }
@@ -261,6 +263,16 @@ class Server extends LogEnabledClass
     }
 
     /**
+     * createRouteCache
+     *  Only fires when there is no cache folder
+     */
+    private function createRouteCache()
+    {
+        (new RouteParser($this->cacheFolder))
+        ->parseControllerFiles();
+    }
+
+    /**
      * matchRoute
      */
     private function matchRoute()
@@ -269,11 +281,11 @@ class Server extends LogEnabledClass
         $index = $this->getRequestURIIndex();
 
         // Route cache folder not found
-        if(!is_dir(self::$CACHE_FOLDER))
-            throw new ResourceNotFoundException("routesNotFound", "Could not find resources");
+        if(!is_dir($this->cacheFolder))
+            $this->createRouteCache();
 
         // Find route index file
-        $routeCacheFile = self::$CACHE_FOLDER."/$method/$index";
+        $routeCacheFile = $this->cacheFolder."/$method/$index";
 
         // Not found
         if(!is_file($routeCacheFile))
