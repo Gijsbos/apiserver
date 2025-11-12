@@ -10,8 +10,8 @@
 
 ## Introduction
 
-This project is a lightweight, attribute-driven PHP API framework that simplifies route definition, request validation, and response filtering.  
-It aims to make building structured REST APIs **clean, fast, and type-safe**, leveraging **PHP 8 attributes** and modern design patterns.
+Lightweight, attribute-driven PHP API Server that simplifies route definition, request validation, and response filtering.  
+It aims to make building structured REST APIs **clean, fast, and type-safe**, leveraging PHP 8+ attributes.
 
 ---
 
@@ -25,6 +25,65 @@ Before running the application, make sure you have the following installed:
 
 ## Installation
 
-```git clone https://github.com/yourusername/yourrepo.git
-cd yourrepo
-composer install
+```
+composer require gijsbos/apiserver
+```
+
+## Setup
+
+### Controllers
+Extend your controllers with the `RouteController` class and create a new route by defining attributes:  
+- Route(`method`, `path`) or short GetRoute, PostRoute, PutRoute, DeleteRoute, PatchRoute, OptionsRoute.  
+- ReturnFilter(`array`) - assoc array containing keys to filter out.  
+- RequiresAuthorization() - extends the ExecuteBeforeRoute, provides simple token checking and extraction.  
+
+### Route Parameters
+Route parameters allow you to inject parameters into your controller method.  
+- `PathVariable` - Extracts parameters from path that have been defined using curly brackets.  
+- `RequestParam` - Extracts parameters from global variables.  
+- `RequestHeader` - Extracts headers from server headers.  
+
+Parameter behaviour can be controlled by both defining union types and optional parameters.  
+
+- `RequestParam|string $id` - Expects a string value, when not defined defaults to `empty string`.  
+- `RequestParam|int $id` - Expects an `int` value, cast to `int` or defaults to `empty string`.  
+- `RequestParam|float $id` - Expects an `float` value, cast to `float` or defaults to `empty string`.  
+- `RequestParam|double $id` - Expects an `int` value, cast to `double` or defaults to `empty string`.  
+- `RequestParam|bool $id` - Expects an `int` value, cast to `bool` or defaults to `empty string`.  
+
+Allowing `null` values requires you to add the null union type:  
+- `RequestParam|string|null $id` - Expects a string value, when not defined defaults to `null`.  
+
+Route parameter options can be defined by defining the object inside the parameter definition:
+
+```
+PathVariable|string $id = new PathVariable(["min" => 0, "max" => 999, "required" => true, "pattern" => "/\d+/", "default" => 1])
+```
+
+The following options are provided:  
+- min *int* - minimum value for `int` values, minimum length for `string` values.  
+- max *int* - maximum value for `int` values, maximum length for `string` values.  
+- required *bool* - when true, throws missing error when parameter is not defined (has no effect on PathVariable).  
+- pattern *string* - regexp pattern uses to check the value.  
+- default *mixed* - fallback value when value is empty.  
+- values *array* - permitted values or throws error.  
+
+### Example
+
+```
+class UserController extends RouteController
+{
+    #[GetRoute('/user/{id}/')]
+    #[ReturnFilter(['name','id'])]
+    public function getUser(
+        PathVariable|string $id = new PathVariable(["min" => 0, "max" => 999, "required" => false]),
+        RequestParam|string $name = new RequestParam(["min" => 0, "max" => 10, "pattern" => "/^[a-z]+$/", "required" => false, "default" => "john"]),
+    )
+    {
+        return [
+            "id" => "<$id>",
+            "name" => $name,
+        ];
+    }
+}
+```
