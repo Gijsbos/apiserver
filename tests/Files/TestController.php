@@ -89,8 +89,6 @@ class TestController extends RouteController
     #[RequiresAuthorization()]
     public function requiresAuthorization(
         RequestHeader|string $authorization = new RequestHeader(),
-        PathVariable|int $id = new PathVariable(["min" => 0, "max" => 4, "required" => false]),
-        RequestParam|string $name = new RequestParam(["pattern" => "/^[a-z]+$/", "required" => false]),
     )
     {
         return [

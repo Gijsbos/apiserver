@@ -88,14 +88,19 @@ class UserController extends RouteController
 }
 ```
 
-### Server Definition
+### Server
+
+Create a server by defining the following in your index.php. Every request must be rewritten to the index.php file.  
+
 ```
 try
 {
     $server = new Server([
-        "pathPrefix" => "apiserver/",   // For nested paths
-        "addServerTime" => true,        // Adds server time
-        "addRequestTime" => true,       // Adds request time
+        "requireHttps" => false,        // Must use HTTPS or receive error
+        "pathPrefix" => "",             // Used for subpaths e.g. localhost/mysubpath/
+        "escapeResult" => true,         // Escaped special characters
+        "addServerTime" => false,       // Adds code execution time
+        "addRequestTime" => false,      // Adds total server response time
     ]);
 
     $server->listen();
