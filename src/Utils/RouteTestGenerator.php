@@ -3,7 +3,9 @@ declare(strict_types=1);
 
 namespace gijsbos\ApiServer\Utils;
 
-use gijsbos\ApiServer\Classes\RequiresAuthorization;
+use ReflectionClass;
+use ReflectionMethod;
+
 use gijsbos\ApiServer\Classes\ReturnFilter;
 use gijsbos\ApiServer\Classes\Route;
 use gijsbos\ApiServer\Classes\RouteAttribute;
@@ -12,8 +14,7 @@ use gijsbos\ClassParser\Classes\ClassComponent;
 use gijsbos\ClassParser\Classes\ClassObject;
 use gijsbos\ClassParser\ClassParser;
 use gijsbos\Logging\Classes\LogEnabledClass;
-use ReflectionClass;
-use ReflectionMethod;
+
 
 use function gijsbos\Logging\Library\log_debug;
 use function gijsbos\Logging\Library\log_info;
@@ -23,6 +24,33 @@ use function gijsbos\Logging\Library\log_info;
  */
 class RouteTestGenerator extends LogEnabledClass
 {
+    const DEFAULT_CONFIG_FILE = "generator-config.json";
+
+    private string $baseUrl;
+
+    /**
+     * __construct
+     */
+    public function __construct(array $opts = [])
+    {
+        parent::__construct();
+
+        $config = $this->loadConfig();
+
+        $this->baseUrl = @$opts["baseUrl"] ?? @$config["baseUrl"] ?? "http://localhost";
+    }
+
+    /**
+     * loadConfig
+     */
+    private function loadConfig()
+    {
+        if(is_file(self::DEFAULT_CONFIG_FILE))
+            return json_decode(file_get_contents(self::DEFAULT_CONFIG_FILE), true);
+
+        return [];
+    }
+
     /**
      * getRouteControllerClasses
      */
@@ -70,14 +98,17 @@ class RouteTestGenerator extends LogEnabledClass
         // Create file
         $namespace = $reflection->getNamespaceName();
 
+        // Create content
+        $namespaceContent = is_string($namespace) && strlen($namespace) > 0 ? "\n\nnamespace $namespace;" : "";
+
         // Return content
         $fileContent =  <<< PHP
                         <?php
-                        declare(strict_types=1);
-
-                        namespace $namespace;
+                        declare(strict_types=1);$namespaceContent
 
                         use PHPUnit\Framework\TestCase;
+
+                        use \gijsbos\Http\Http\HTTPRequest;
 
                         $classContent
                         PHP;
@@ -139,35 +170,81 @@ class RouteTestGenerator extends LogEnabledClass
     }
 
     /**
+     * createHTTPRequest
+     */
+    private function createHTTPRequest(string $uri, array $data = [], array $headers = [])
+    {
+        $dataContent = "";
+        foreach($data as $key => $value)
+        {
+            if(strlen($dataContent) == 0)
+                $dataContent = ",\n            \"data\" => [\n";
+
+            $dataContent.="                \"$key\" => $value,";
+        }
+
+        if(strlen($dataContent))
+            $dataContent = "$dataContent\n            ]";
+
+        $headerContent = "";
+        foreach($headers as $key => $value)
+        {
+            if(strlen($headerContent) == 0)
+                $headerContent = ",\n            \"headers\" => [\n";
+
+            $headerContent.="                \"$key\" => $value,";
+        }
+
+        if(strlen($headerContent))
+            $headerContent = "$headerContent\n            ]";
+
+        return <<<PHP
+HTTPRequest::get([
+            "uri" => "$uri"$dataContent$headerContent
+        ]);
+PHP;
+    }
+
+    /**
      * createGetMethod
      */
     private function createGetMethod(ReflectionMethod $method, Route $route, ClassObject &$classObject)
     {
-        $testFunctionName = $method->getName() . "Test";
+        $testFunctionName = "test" . ucfirst($method->getName());
 
+        // Create method
+        if($classObject->hasMethod($testFunctionName))
+            return true;
+
+        // Get returnFilter
         $returnFilter = $this->getMethodAttributeOfSubclass($method, RouteAttribute::class, ReturnFilter::class);
 
+        // Set return filter
         if($returnFilter !== false)
-        {
-
-        }
+            $returnFilter = $returnFilter->newInstance();
 
         // Get path
-        $path = str_must_start_with(str_replace("{", "{\$", $route->getPath()), "/");
+        $uri = $this->baseUrl . str_must_start_with(str_replace("{", "{\$", $route->getPath()), "/");
 
         // Get path vars
-        $pathVariables = implode("\n", array_map(function($name)
-        {
+        $pathVariables = implode("\n", array_map(function($name) {
             return "        \$$name = null;";
         }, $route->getPathVariableNames()));
+
+        // Add newline
+        if(strlen($pathVariables) > 0)
+            $pathVariables = "$pathVariables\n";
 
         // Create component
         $testMethod = $this->createUnitTestMethod($testFunctionName);
 
+        // Create content
+        $httpRequestContent = $this->createHTTPRequest($uri);
+
         // Add body
         $testMethod->body = <<< EOD
 $pathVariables
-        \$response = HTTPRequest::get(["uri" => "http://localhost$path"]);
+        \$response = $httpRequestContent\n
         \$this->assertTrue(\$response->isSuccessful());
 EOD;
 
@@ -227,25 +304,18 @@ EOD;
                 {
                     $this->createSetUpMethod($classObject);
                 }
-                
-                // Add route test
-                $methodTestName = $method->getName() . "Test";
 
-                // Create method
-                if(!$classObject->hasMethod($methodTestName))
+                switch($route->getRequestMethod())
                 {
-                    switch($route->getRequestMethod())
-                    {
-                        case "GET":
-                            $this->createGetMethod($method, $route, $classObject);
-                    }
+                    case "GET":
+                        $this->createGetMethod($method, $route, $classObject);
                 }
             } 
             
             if($classObject !== null)
             {
-                echo($classObject->toString());
-                exit();
+                var_dump($classObject->toString());exit();
+                file_put_contents($classObject->getFileName(), $classObject->toString());
             }
         }
     }

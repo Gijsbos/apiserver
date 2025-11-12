@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "3c2853708aaf9949c5b944acfbce5009",
+    "content-hash": "9166011f9ada12ea779dd31b8279c6b1",
     "packages": [
         {
             "name": "brick/math",
@@ -132,6 +132,53 @@
                 "source": "https://github.com/defuse/php-encryption/tree/v2.4.0"
             },
             "time": "2023-06-19T06:10:36+00:00"
+        },
+        {
+            "name": "gijsbos/classparser",
+            "version": "1.0.0",
+            "source": {
+                "type": "git",
+                "url": "https://github.com/Gijsbos/classparser.git",
+                "reference": "2be119c791ec6c89985d0f270c88e06514f49415"
+            },
+            "dist": {
+                "type": "zip",
+                "url": "https://api.github.com/repos/Gijsbos/classparser/zipball/2be119c791ec6c89985d0f270c88e06514f49415",
+                "reference": "2be119c791ec6c89985d0f270c88e06514f49415",
+                "shasum": ""
+            },
+            "require": {
+                "gijsbos/extfuncs": "^1.1",
+                "gijsbos/stringfuncs": "^1.3"
+            },
+            "require-dev": {
+                "phpunit/phpunit": "^5.7 || ^9.0"
+            },
+            "type": "library",
+            "autoload": {
+                "psr-4": {
+                    "gijsbos\\ClassParser\\": "src/"
+                }
+            },
+            "notification-url": "https://packagist.org/downloads/",
+            "license": [
+                "MIT"
+            ],
+            "authors": [
+                {
+                    "name": "Gijs and contributors",
+                    "homepage": "https://github.com/gijsbos/classparser/graphs/contributors"
+                }
+            ],
+            "description": "PHP Extension Functions",
+            "keywords": [
+                "classparser"
+            ],
+            "support": {
+                "issues": "https://github.com/Gijsbos/classparser/issues",
+                "source": "https://github.com/Gijsbos/classparser/tree/1.0.0"
+            },
+            "time": "2025-11-09T22:16:05+00:00"
         },
         {
             "name": "gijsbos/extfuncs",
