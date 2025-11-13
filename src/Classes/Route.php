@@ -162,7 +162,7 @@ class Route implements RouteInterface
      */
     public function hasAttribute(string $name) : bool
     {
-        return count($this->getAttributes($name)) > 0;
+        return $this->getAttributes($name) !== null;
     }
 
     /**
