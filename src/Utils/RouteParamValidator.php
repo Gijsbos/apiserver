@@ -99,6 +99,9 @@ abstract class RouteParamValidator
                 break;
 
             case "string":
+                if(!is_string($p->value))
+                    throw new LogicException("String parameter validator received type '".gettype($p->value)."' for argument '{$p->name}'");
+
                 if(isset($p->min) && mb_strlen($p->value) < $p->min)
                     throw new BadRequestException($p->name."LengthMinExceeded", "Parameter '{$p->name}' cannot be less than '{$p->min}'");
 
