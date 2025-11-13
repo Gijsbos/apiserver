@@ -18,9 +18,6 @@ use gijsbos\ApiServer\Server;
 use gijsbos\CLIParser\CLIParser\Command;
 use gijsbos\Logging\Classes\LogEnabledClass;
 
-use function gijsbos\Logging\Library\log_debug;
-use function gijsbos\Logging\Library\log_info;
-
 /**
  * RouteParser
  */

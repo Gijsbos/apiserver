@@ -15,10 +15,6 @@ use gijsbos\ClassParser\Classes\ClassObject;
 use gijsbos\ClassParser\ClassParser;
 use gijsbos\Logging\Classes\LogEnabledClass;
 
-
-use function gijsbos\Logging\Library\log_debug;
-use function gijsbos\Logging\Library\log_info;
-
 /**
  * RouteTestGenerator
  */

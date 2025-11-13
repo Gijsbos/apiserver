@@ -23,8 +23,6 @@ use gijsbos\ApiServer\Utils\RouteParser;
 use gijsbos\Http\Response;
 use gijsbos\Logging\Classes\LogEnabledClass;
 
-use function gijsbos\Logging\Library\log_error;
-
 /**
  * Server
  */
