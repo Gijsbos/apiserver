@@ -3,9 +3,12 @@ declare(strict_types=1);
 
 namespace gijsbos\ApiServer\Utils;
 
+use gijsbos\ApiServer\Classes\Pattern;
 use LogicException;
 use gijsbos\ApiServer\Classes\RouteParam;
 use gijsbos\Http\Exceptions\BadRequestException;
+use InvalidArgumentException;
+use ReflectionProperty;
 
 /**
  * RouteParamValidator
@@ -33,6 +36,88 @@ abstract class RouteParamValidator
         }
 
         return "string";
+    }
+
+    /**
+     * extractPatternAttributeFromProperty
+     */
+    public static function extractPatternAttributeFromProperty(string $className, string $propertyName)
+    {
+        $property = new ReflectionProperty($className, $propertyName);
+
+        $patterns = array_values(array_filter($property->getAttributes(), fn($a) => $a->getName() == Pattern::class));
+
+        if(count($patterns) == 0)
+            throw new LogicException("Property '{$propertyName}' does not define the 'Pattern' attribute in class '$className'");
+
+        $pattern = reset($patterns);
+
+        return $pattern->newInstance()->getRegExp();
+    }
+
+    /**
+     * parsePatternInput
+     *  Parses pattern input
+     */
+    public static function parsePatternInput(RouteParam $p) : null | string
+    {
+        $pattern = $p->pattern;
+        $propertyName = $p->name;
+
+        if($pattern == null)
+            return null;
+
+        if(is_string($pattern))
+        {
+            if(class_exists($pattern))
+                return self::extractPatternAttributeFromProperty($pattern, $propertyName);
+            else
+                return $pattern;
+        }
+
+        else if(is_array($pattern))
+        {
+            if(count($pattern) == 1)
+            {
+                [$className] = $pattern;
+
+                if(!class_exists($className))
+                    throw new LogicException("Pattern array argument using '$className' does not exist");
+
+                if(!property_exists($className, $propertyName))
+                    throw new LogicException("Pattern array argument using '$className::{$propertyName}' does not exist");
+
+                return self::extractPatternAttributeFromProperty($className, $propertyName);
+            }
+            else if(count($pattern) == 2)
+            {
+                [$className, $propertyOrMethodName] = $pattern;
+
+                if(!is_string($className) || !is_string($propertyOrMethodName))
+                    throw new InvalidArgumentException("Pattern array argument invalid, expected [className,propertyOrMethodName]");
+
+                if(property_exists($className, $propertyOrMethodName))
+                {
+                    return self::extractPatternAttributeFromProperty($className, $propertyOrMethodName);
+                }
+                else if(method_exists($className, $propertyOrMethodName))
+                {
+                    if(!is_callable([$className, $propertyOrMethodName]))
+                        throw new InvalidArgumentException("Pattern array argument is not callable using [$className, $propertyOrMethodName]");
+
+                    $pattern = $className::$propertyOrMethodName();
+
+                    if(!is_string($pattern))
+                        throw new InvalidArgumentException("Pattern array argument using callable [$className, $propertyOrMethodName] returned an invalid type '".gettype($pattern)."', expected string");
+
+                    return $pattern;
+                }
+                else
+                    throw new InvalidArgumentException("Pattern argument invalid using [$className,$propertyOrMethodName]', expected valid [className,propertyOrMethodName]");
+            }
+        }
+
+        throw new InvalidArgumentException("Pattern argument type '".gettype($pattern)."', expected string|[className,propertyOrMethodName]");
     }
 
     /**
@@ -77,6 +162,9 @@ abstract class RouteParamValidator
                 break;
 
             case "string":
+
+                $p->pattern = self::parsePatternInput($p);
+
                 if(!is_string($p->value))
                     throw new LogicException("String parameter validator received type '".gettype($p->value)."' for argument '{$p->name}'");
 
