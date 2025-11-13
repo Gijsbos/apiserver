@@ -40,7 +40,7 @@ abstract class RouteParamValidator
      */
     public static function validate(RouteParam $p)
     {
-        if($p->value == null)
+        if($p->value == null || $p->value == "")
         {
             if($p->isRequired())
                 throw new BadRequestException($p->name."InputInvalid", "Parameter '{$p->name}' is required");
