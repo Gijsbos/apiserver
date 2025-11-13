@@ -38,23 +38,64 @@ abstract class RouteParamValidator
     }
 
     /**
-     * extractPatternFromClassName
+     * extractPatternFromProperty
      */
-    private static function extractPatternFromClassName(RouteParam $p, string $className)
+    private static function extractPatternFromProperty(string $className, string $propertyName)
     {
-        if(!property_exists($className, $p->name))
-            throw new LogicException("Property '{$p->name}' does not exist in class '$className'");
-
-        $property = new ReflectionProperty($className, $p->name);
+        $property = new ReflectionProperty($className, $propertyName);
 
         $patterns = array_values(array_filter($property->getAttributes(), fn($a) => $a->getName() == Pattern::class));
 
         if(count($patterns) == 0)
-            throw new LogicException("Property '{$p->name}' does not define the Pattern attribute in class '$className'");
+            throw new LogicException("Property '{$propertyName}' does not define the Pattern attribute in class '$className'");
 
         $pattern = reset($patterns);
 
         return $pattern->newInstance()->getRegExp();
+    }
+
+    /**
+     * extractPattern
+     */
+    private static function extractPattern(RouteParam $p, string $className)
+    {
+        // Not set, or Empty String / String is Not A class (but a usual pattern), Or Array
+        if($p->pattern == null || (is_string($p->pattern) && (strlen($p->pattern) == 0 || !class_exists($p->pattern))) || !is_array($p->pattern))
+            return $p->pattern;
+
+        // If pattern is array with single value
+        if(is_array($p->pattern) && count($p->pattern) == 1)
+            $p->pattern = reset($p->pattern);
+
+        // Not class
+        if(!class_exists($p->pattern))
+            throw new LogicException("Property '{$p->name}' incorrectly defined pattern as array, expected [className, ?classProperty]");
+
+        // Property does not exist
+        if(is_string($p->pattern))
+        {
+            if(!property_exists($className, $p->name))
+                throw new LogicException("Property '{$p->name}' does not exist in class '$className'");
+
+            return self::extractPatternFromProperty($className, $p->name);
+        }
+        else if(is_array($p->pattern))
+        {
+            if(count($p->pattern) == 2)
+            {
+                [$className, $propertyName] = $p->pattern;
+
+                if(!class_exists($className))
+                    throw new LogicException("Property '{$p->name}' pattern class '$className' does not exist");
+
+                if(!property_exists($className, $propertyName))
+                    throw new LogicException("Property '{$p->name}' pattern class property '$className::$propertyName' does not exist");
+
+                return self::extractPatternFromProperty($className, $propertyName);
+            }
+        }
+
+        throw new LogicException("Pattern value type '".gettype($p->pattern)."' invalid, expected string|array");
     }
 
     /**
@@ -110,8 +151,7 @@ abstract class RouteParamValidator
 
                 if(isset($p->pattern))
                 {
-                    if(class_exists($p->pattern))
-                        $p->pattern = self::extractPatternFromClassName($p, $p->pattern);
+                    $p->pattern = self::extractPattern($p, $p->pattern);
 
                     if(isset($p->pattern) && preg_match($p->pattern, $p->value) == 0)
                         throw new BadRequestException($p->name."ValuePatternFailure", "Parameter '{$p->name}' does not match '{$p->pattern}'"); 
