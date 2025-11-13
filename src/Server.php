@@ -230,6 +230,8 @@ class Server extends LogEnabledClass
     {
         $handle = fopen($cacheFile, 'r');
 
+        $requestURI = $this->getRequestURI();
+
         if (!$handle) {
             throw new RuntimeException("Cannot open file: $cacheFile");
         }
@@ -242,7 +244,7 @@ class Server extends LogEnabledClass
 
                 if (count($routeData) < 2) continue;
 
-                if (preg_match($routeData[0], $this->getRequestURI(), $pathPatternMatches))
+                if (preg_match($routeData[0], $requestURI, $pathPatternMatches))
                 {
                     return $this->parseRoute($routeData[1], $pathPatternMatches); // found!
                 }
