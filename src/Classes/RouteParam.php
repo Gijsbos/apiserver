@@ -20,7 +20,7 @@ class RouteParam implements RouteParamInterface
     public null|string $type = null;
     public mixed $min = null;
     public mixed $max = null;
-    public null|string $pattern = null;
+    public null|array|string $pattern = null;
     public null|array $values = null;
     public bool $required = false;
     public mixed $default = null;
