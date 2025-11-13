@@ -16,7 +16,7 @@ use gijsbos\ApiServer\Server;
 class Route implements RouteInterface
 {
     private string $path;
-    private int $status;
+    private int $statusCode;
     private string $pathPattern = "";
     private null|array $pathVariableNames;
     private null|array $pathVariables;
@@ -31,10 +31,10 @@ class Route implements RouteInterface
     /**
      * __construct
      */
-    public function __construct(private string $requestMethod, string $path, int $status = 200, array $opts = [])
+    public function __construct(private string $requestMethod, string $path, int $statusCode = 200, array $opts = [])
     {
         $this->path = str_must_start_with($path, "/");
-        $this->status = $status;
+        $this->statusCode = $statusCode;
         $this->pathPattern = "";
         $this->pathVariableNames = null;
         $this->pathVariables = null;
@@ -73,11 +73,19 @@ class Route implements RouteInterface
     }
 
     /**
-     * getStatus
+     * getStatusCode
      */
-    public function getStatus() : int
+    public function getStatusCode() : int
     {
-        return $this->status;
+        return $this->statusCode;
+    }
+
+    /**
+     * getStatusCode
+     */
+    public function setStatusCode(int $statusCode)
+    {
+        $this->statusCode = $statusCode;
     }
 
     /**

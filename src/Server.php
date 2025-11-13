@@ -20,6 +20,7 @@ use gijsbos\ApiServer\Interfaces\RouteInterface;
 use gijsbos\ApiServer\Utils\ArrayToXmlParser;
 use gijsbos\ApiServer\Utils\RouteMethodParamsFactory;
 use gijsbos\ApiServer\Utils\RouteParser;
+use gijsbos\Http\Response;
 use gijsbos\Logging\Classes\LogEnabledClass;
 
 use function gijsbos\Logging\Library\log_error;
@@ -292,7 +293,13 @@ class Server extends LogEnabledClass
      */
     private function convertObject(object $data)
     {
-        if($data instanceof \DateTime)
+        if($data instanceof Response)
+        {
+            $this->route->setStatusCode($data->getStatusCode());
+            
+            return $data->getParameters();
+        }
+        else if($data instanceof \DateTime)
         {
             $format = $this->dateTimeFormat;
 
@@ -415,14 +422,14 @@ class Server extends LogEnabledClass
 
             case "application/xml":
                 Header('Content-Type: application/xml; charset=utf-8');
-                http_response_code($this->getRoute()?->getStatus() ?? 200);
+                http_response_code($this->getRoute()?->getStatusCode() ?? 200);
                 echo (new ArrayToXmlParser())->arrayToXml($result)->asXML();
             exit();
 
             case "application/json":
             default:
                 Header('Content-Type: application/json; charset=utf-8');
-                http_response_code($this->getRoute()?->getStatus() ?? 200);
+                http_response_code($this->getRoute()?->getStatusCode() ?? 200);
                 echo json_encode($result);
             exit();
         }

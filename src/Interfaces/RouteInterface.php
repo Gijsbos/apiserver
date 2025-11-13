@@ -10,7 +10,8 @@ interface RouteInterface
 {
     public function getRequestMethod(): string;
     public function getPath(): string;
-    public function getStatus(): int;
+    public function getStatusCode(): int;
+    public function setStatusCode(int $statusCode);
     public function getPathPattern() : string;
     public function getPathVariableNames(): array;
     public function getPathVariables();
