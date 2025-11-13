@@ -15,6 +15,14 @@ class ReturnFilter extends RouteAttribute
     { }
 
     /**
+     * getFilter
+     */
+    public function getFilter()
+    {
+        return $this->filter;
+    }
+
+    /**
      * santizeReturnDataKey
      */
     public static function santizeReturnDataKey(string $value) : string

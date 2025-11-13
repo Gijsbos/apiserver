@@ -31,16 +31,29 @@ class Route implements RouteInterface
     /**
      * __construct
      */
-    public function __construct(private string $requestMethod, string $path, int $status = 200)
+    public function __construct(private string $requestMethod, string $path, int $status = 200, array $opts = [])
     {
         $this->path = str_must_start_with($path, "/");
         $this->status = $status;
         $this->pathPattern = "";
         $this->pathVariableNames = null;
         $this->pathVariables = null;
-        $this->attributes = [];
+        $this->requestURI = @$opts["requestURI"];
+        $this->className = @$opts["className"];
+        $this->methodName = @$opts["methodName"];
+        $this->attributes = is_string(@$opts["className"]) && is_string(@$opts["methodName"]) ? $this->extractRouteAttributes($opts["className"], $opts["methodName"]) : [];
         $this->routeParams = [];
         $this->data = [];
+    }
+
+    /**
+     * extractRouteAttributes
+     */
+    public static function extractRouteAttributes(string|ReflectionMethod $classOrReflectionMethod, ?string $method = null)
+    {
+        $method = is_string($classOrReflectionMethod) && is_string($method) ? new ReflectionMethod($classOrReflectionMethod, $method) : $classOrReflectionMethod;
+
+        return array_values(array_filter($method->getAttributes(), fn($a) => !is_subclass_of($a->getName(), Route::class)));
     }
 
     /**
@@ -132,7 +145,14 @@ class Route implements RouteInterface
     public function getAttributes(?string $name = null)
     {
         if(is_string($name))
-            return array_filter($this->attributes, fn($a) => $a->getName() == $name);
+        {
+            $attributes = array_filter($this->attributes, fn($a) => $a->getName() == $name);
+
+            if(count($attributes) == 0)
+                return null;
+
+            return reset($attributes)->newInstance();
+        }
 
         return $this->attributes;
     }

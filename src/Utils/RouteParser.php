@@ -184,6 +184,21 @@ class RouteParser extends LogEnabledClass
     }
 
     /**
+     * getReflectionMethodAttributeOfSubclass
+     */
+    public static function getReflectionMethodAttributeOfSubclass(ReflectionMethod $method, string $subclass, null|string $name = null)
+    {
+        $result = array_values(array_filter($method->getAttributes(), fn($a) => is_subclass_of($a->getName(), $subclass) && ($name == null || $name == $a->getName())));
+
+        if($name !== null)
+        {
+            return reset($result);
+        }
+
+        return $result;
+    }
+
+    /**
      * run
      */
     public static function run(null|Command $command = null)

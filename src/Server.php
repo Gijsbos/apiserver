@@ -178,14 +178,6 @@ class Server extends LogEnabledClass
     }
 
     /**
-     * extractRouteAttributes
-     */
-    private function extractRouteAttributes(Route $route)
-    {
-        return array_values(array_filter($route->getReflectionClassMethod()->getAttributes(), fn($a) => !is_subclass_of($a->getName(), Route::class)));
-    }
-
-    /**
      * parseRoute
      */
     private function parseRoute(string $classMethod, array $pathPatternMatches = [])
@@ -209,7 +201,7 @@ class Server extends LogEnabledClass
         $route->setRequestURI($this->requestURI);
 
         // Add attributes
-        $route->setAttributes($a = $this->extractRouteAttributes($route));
+        $route->setAttributes(Route::extractRouteAttributes($className, $methodName));
 
         // Init path variables
         $pathVariableNames = $route->getPathVariableNames();
