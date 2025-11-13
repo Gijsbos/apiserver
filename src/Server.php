@@ -347,19 +347,13 @@ class Server extends LogEnabledClass
     {
         if($route->hasAttribute(ReturnFilter::class))
         {
-            $attributes = $route->getAttributes(ReturnFilter::class);
+            $returnFilterAttribute = $route->getAttributes(ReturnFilter::class);
 
-            $returnFilter = count($attributes) > 0 ? reset($attributes) : null;
-
-            if($returnFilter instanceof ReflectionAttribute)
+            if($returnFilterAttribute !== null)
             {
-                $returnFilter = $returnFilter->newInstance();
-
-                if($returnFilter instanceof ReturnFilter)
-                    $returnData = $returnFilter->applyFilter($returnData);
+                $returnData = $returnFilterAttribute->newInstance()->applyFilter($returnData);
             }
         }
-
         return $returnData;
     }
 
