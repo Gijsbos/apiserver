@@ -20,7 +20,7 @@ interface RouteInterface
     public function getAttributes(?string $name = null);
     public function hasAttribute(string $name): bool;
     public function addRouteParam(RouteParamInterface $routeParam): void;
-    public function getRouteParams(): array;
+    public function getRouteParams(?string $key = null);
     public function setData(array $data);
     public function addData(string $key, $value);
     public function hasData(?string $key = null);

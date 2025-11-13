@@ -184,8 +184,16 @@ class Route implements RouteInterface
     /**
      * getRouteParams
      */
-    public function getRouteParams() : array
+    public function getRouteParams(?string $key = null)
     {
+        if(is_string($key))
+        {
+            foreach($this->routeParams as $param)
+                if($param->getName() == $key)
+                    return $param;
+            return null;
+        }
+
         return $this->routeParams;
     }
 
