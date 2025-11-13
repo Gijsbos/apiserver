@@ -3,6 +3,7 @@ declare(strict_types=1);
 
 namespace gijsbos\ApiServer\Utils;
 
+use gijsbos\ApiServer\Classes\OptRequestParam;
 use ReflectionNamedType;
 use ReflectionUnionType;
 use RuntimeException;
@@ -94,7 +95,8 @@ class RouteMethodParamsFactory
                     return $routeParamClass::createWithoutConstructor($name, $route, $route->getPathVariables($name), $primitiveType);
 
             case RequestParam::class:
-                if($defaultValue instanceof RequestParam)
+            case OptRequestParam::class:
+                if($defaultValue instanceof RequestParam || $defaultValue instanceof OptRequestParam)
                     return $routeParamClass::createWithoutConstructorFromObject($defaultValue, $name, $route, RequestParam::extractValueFromGlobals($route->getServer()->getRequestMethod(), $name, $primitiveType), $primitiveType);
                 else
                     return $routeParamClass::createWithoutConstructor($name, $route, RequestParam::extractValueFromGlobals($route->getServer()->getRequestMethod(), $name, $primitiveType), $primitiveType);
