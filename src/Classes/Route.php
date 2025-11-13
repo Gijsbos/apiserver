@@ -26,6 +26,7 @@ class Route implements RouteInterface
     private null|array $attributes = [];
     private null|array $routeParams = [];
     private null|Server $server = null;
+    private null|array $data = [];
 
     /**
      * __construct
@@ -39,6 +40,7 @@ class Route implements RouteInterface
         $this->pathVariables = null;
         $this->attributes = [];
         $this->routeParams = [];
+        $this->data = [];
     }
 
     /**
@@ -122,6 +124,44 @@ class Route implements RouteInterface
     public function getRouteParams() : array
     {
         return $this->routeParams;
+    }
+
+    /**
+     * setData
+     */
+    public function setData(array $data)
+    {
+        $this->data = $data;
+    }
+
+    /**
+     * addData
+     */
+    public function addData(string $key, $value)
+    {
+        $this->data[$key] = $value;
+    }
+
+    /**
+     * hasData
+     */
+    public function hasData(?string $key = null)
+    {
+        if(is_string($key))
+            return $this->getData($key) !== null;
+
+        return count($this->data) > 0;
+    }
+
+    /**
+     * getData
+     */
+    public function getData(?string $key = null)
+    {
+        if(is_string($key))
+            return @$this->data[$key];
+
+        return $this->data;
     }
 
     /**
