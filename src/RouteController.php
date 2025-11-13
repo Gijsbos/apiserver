@@ -50,12 +50,12 @@ class RouteController
 
     public function getReturnFilter()
     {
-        return $this->getServer()?->getRoute()?->getAttributes(ReturnFilter::class);
+        return $this->getServer()?->getRoute()?->getAttributes(ReturnFilter::class)?->newInstance();
     }
 
     public function getReturnFilterData() : null | array
     {
-        return $this->getServer()?->getRoute()?->getAttributes(ReturnFilter::class)->getFilter();
+        return $this->getServer()?->getRoute()?->getAttributes(ReturnFilter::class)?->newInstance()->getFilter();
     }
 
     public function getRoute() : null | RouteInterface

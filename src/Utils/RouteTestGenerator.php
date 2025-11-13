@@ -60,21 +60,6 @@ class RouteTestGenerator extends LogEnabledClass
     }
 
     /**
-     * getMethodAttributeOfSubclass
-     */
-    public function getMethodAttributeOfSubclass(ReflectionMethod $method, string $subclass, null|string $name = null)
-    {
-        $result = array_values(array_filter($method->getAttributes(), fn($a) => is_subclass_of($a->getName(), $subclass) && ($name == null || $name == $a->getName())));
-
-        if($name !== null)
-        {
-            return reset($result);
-        }
-
-        return $result;
-    }
-
-    /**
      * getTestController
      */
     private function getTestController(ReflectionClass $reflection, string $outputFolder)
@@ -217,7 +202,7 @@ PHP;
             return true;
 
         // Get returnFilter
-        $returnFilter = $this->getMethodAttributeOfSubclass($method, RouteAttribute::class, ReturnFilter::class);
+        $returnFilter = RouteParser::getReflectionMethodAttributeOfSubclass($method, RouteAttribute::class, ReturnFilter::class);
 
         // Set return filter
         if($returnFilter !== false)
@@ -271,7 +256,7 @@ EOD;
 
             foreach($publicMethods as $method)
             {
-                $route = $this->getMethodAttributeOfSubclass($method, Route::class);
+                $route = RouteParser::getReflectionMethodAttributeOfSubclass($method, Route::class);
 
                 // Skip method
                 if(count($route) == 0)
