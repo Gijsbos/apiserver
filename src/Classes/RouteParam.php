@@ -11,6 +11,9 @@ use ReflectionClass;
  */
 class RouteParam implements RouteParamInterface
 {
+    const WORD_PATTERN = "/^\w+$/";
+    const URI_PATTERN = "/^https?:\/\//";
+
     public string $name = "";
     public null|Route $route = null;
     public mixed $value = null;

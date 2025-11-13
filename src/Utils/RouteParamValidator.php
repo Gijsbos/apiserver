@@ -3,6 +3,9 @@ declare(strict_types=1);
 
 namespace gijsbos\ApiServer\Utils;
 
+use LogicException;
+use ReflectionProperty;
+use gijsbos\ApiServer\Classes\Pattern;
 use gijsbos\ApiServer\Classes\RouteParam;
 use gijsbos\Http\Exceptions\BadRequestException;
 
@@ -11,9 +14,9 @@ use gijsbos\Http\Exceptions\BadRequestException;
  */
 abstract class RouteParamValidator
 {
-    const WORD_PATTERN = "/^\w+$/";
-    const URI_PATTERN = "/^https?:\/\//";
-
+    /**
+     * getTypeFromValue
+     */
     public static function getTypeFromValue($value)
     {
         if(is_string($value))
@@ -34,6 +37,29 @@ abstract class RouteParamValidator
         return "string";
     }
 
+    /**
+     * extractPatternFromClassName
+     */
+    private static function extractPatternFromClassName(RouteParam $p, string $className)
+    {
+        if(!property_exists($className, $p->name))
+            throw new LogicException("Property '{$p->name}' does not exist in class '$className'");
+
+        $property = new ReflectionProperty($className, $p->name);
+
+        $patterns = array_values(array_filter($property->getAttributes(), fn($a) => $a->getName() == Pattern::class));
+
+        if(count($patterns) == 0)
+            throw new LogicException("Property '{$p->name}' does not define the Pattern attribute in class '$className'");
+
+        $pattern = reset($patterns);
+
+        return $pattern->newInstance()->getRegExp();
+    }
+
+    /**
+     * validate
+     */
     public static function validate(RouteParam $p)
     {
         if($p->value == null)
@@ -79,8 +105,15 @@ abstract class RouteParamValidator
                 if(isset($p->max) && mb_strlen($p->value) > $p->max)
                     throw new BadRequestException($p->name."LengthMaxExceeded", "Parameter '{$p->name}' cannot be greater than '{$p->max}'");
 
-                if(isset($p->pattern) && preg_match($p->pattern, $p->value) == 0)
-                    throw new BadRequestException($p->name."ValuePatternFailure", "Parameter '{$p->name}' does not match '{$p->pattern}'"); 
+                if(isset($p->pattern))
+                {
+                    if(class_exists($p->pattern))
+                        $p->pattern = self::extractPatternFromClassName($p, $p->pattern);
+
+                    if(isset($p->pattern) && preg_match($p->pattern, $p->value) == 0)
+                        throw new BadRequestException($p->name."ValuePatternFailure", "Parameter '{$p->name}' does not match '{$p->pattern}'"); 
+                }
+                
                 break;
         }
     }
