@@ -4,10 +4,10 @@ declare(strict_types=1);
 namespace gijsbos\ApiServer\Classes;
 
 use Attribute;
+use ReflectionMethod;
 use gijsbos\ApiServer\Interfaces\RouteInterface;
 use gijsbos\ApiServer\Interfaces\RouteParamInterface;
 use gijsbos\ApiServer\Server;
-use ReflectionMethod;
 
 /**
  * Route
@@ -68,19 +68,54 @@ class Route implements RouteInterface
     }
 
     /**
-     * getServer
+     * getPathPattern
      */
-    public function getServer() : null | Server
+    public function getPathPattern() : string
     {
-        return $this->server;
+        if(strlen($this->pathPattern))
+            return $this->pathPattern;
+
+        $pathData = $this->parsePathData();
+
+        $this->pathPattern = $pathData["pathPattern"];
+        $this->pathVariableNames = $pathData["pathVariableNames"];
+
+        return $this->pathPattern;
     }
 
     /**
-     * setServer
+     * getPathVariableNames
      */
-    public function setServer(Server $server) : void
+    public function getPathVariableNames() : array
     {
-        $this->server = $server;
+        if(is_array($this->pathVariableNames))
+            return $this->pathVariableNames;
+
+        $pathData = $this->parsePathData();
+
+        $this->pathPattern = $pathData["pathPattern"];
+        $this->pathVariableNames = $pathData["pathVariableNames"];
+
+        return $this->pathVariableNames;
+    }
+
+    /**
+     * getPathVariables
+     */
+    public function getPathVariables(null|string $key = null)
+    {
+        if(is_string($key))
+            return @$this->pathVariables[$key];
+
+        return $this->pathVariables;
+    }
+
+    /**
+     * setPathVariables
+     */
+    public function setPathVariables(array $pathVariables) : void
+    {
+        $this->pathVariables = $pathVariables;
     }
 
     /**
@@ -165,54 +200,19 @@ class Route implements RouteInterface
     }
 
     /**
-     * getPathPattern
+     * getServer
      */
-    public function getPathPattern() : string
+    public function getServer() : null | Server
     {
-        if(strlen($this->pathPattern))
-            return $this->pathPattern;
-
-        $pathData = $this->parsePathData();
-
-        $this->pathPattern = $pathData["pathPattern"];
-        $this->pathVariableNames = $pathData["pathVariableNames"];
-
-        return $this->pathPattern;
+        return $this->server;
     }
 
     /**
-     * getPathVariableNames
+     * setServer
      */
-    public function getPathVariableNames() : array
+    public function setServer(Server $server) : void
     {
-        if(is_array($this->pathVariableNames))
-            return $this->pathVariableNames;
-
-        $pathData = $this->parsePathData();
-
-        $this->pathPattern = $pathData["pathPattern"];
-        $this->pathVariableNames = $pathData["pathVariableNames"];
-
-        return $this->pathVariableNames;
-    }
-
-    /**
-     * getPathVariables
-     */
-    public function getPathVariables(null|string $key = null)
-    {
-        if(is_string($key))
-            return @$this->pathVariables[$key];
-
-        return $this->pathVariables;
-    }
-
-    /**
-     * setPathVariables
-     */
-    public function setPathVariables(array $pathVariables) : void
-    {
-        $this->pathVariables = $pathVariables;
+        $this->server = $server;
     }
 
     /**
