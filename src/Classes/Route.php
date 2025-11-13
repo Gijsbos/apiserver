@@ -151,7 +151,7 @@ class Route implements RouteInterface
             if(count($attributes) == 0)
                 return null;
 
-            return reset($attributes)->newInstance();
+            return reset($attributes);
         }
 
         return $this->attributes;
