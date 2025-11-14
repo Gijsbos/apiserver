@@ -8,6 +8,7 @@ use ReflectionMethod;
 use gijsbos\ApiServer\Interfaces\RouteInterface;
 use gijsbos\ApiServer\Interfaces\RouteParamInterface;
 use gijsbos\ApiServer\Server;
+use RuntimeException;
 
 /**
  * Route
@@ -67,9 +68,54 @@ class Route implements RouteInterface
     /**
      * getPath
      */
-    public function getPath() : string
+    public function getPath(...$pathVariableValues) : string
     {
-        return $this->path;
+        $path = $this->path;
+
+        // If pathVariableValues are provided, we fill path variables.
+        if(count($pathVariableValues))
+        {
+            if($this->pathVariableNames == null)
+                $this->pathVariableNames = $this->getPathVariableNames();
+
+            $pathVariableNames = $this->pathVariableNames;
+
+            $params = array_map_assoc(function($k, $v) use ($pathVariableNames) {
+                return [$pathVariableNames[$k], $v];
+            }, $pathVariableValues);
+
+            $path = replace_placeholder_array($params, $path, "{", "}");
+        }
+
+        return $path;
+    }
+
+    /**
+     * getFullPath
+     */
+    public function getFullPath(bool $useHTTPS = false, ...$pathVariableValues) : string
+    {
+        // Server is set when route is resolved by server
+        if($this->server)
+        {
+            $baseUrl = env("BASE_URL");
+
+            if($baseUrl === false)
+            {
+                $http = $useHTTPS ? "https" : "http";
+                $host = get_uri_part('host');
+                $baseUrl = str_must_not_end_with("$http://$host", "/") . str_must_start_with(str_must_not_end_with($this->server->getPathPrefix(), "/"), "/");
+            }
+        }
+
+        // No server set, requires manual base url insertion
+        else
+        {
+            $baseUrl = env("BASE_URL", true);
+        }
+
+        // When baseUrl is set, we create the full path
+        return str_must_not_end_with($baseUrl, "/") . str_must_start_with($this->getPath(...$pathVariableValues), "/");
     }
 
     /**

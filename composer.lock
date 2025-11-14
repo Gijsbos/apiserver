@@ -283,16 +283,16 @@
         },
         {
             "name": "gijsbos/logging",
-            "version": "1.3.0",
+            "version": "1.3.2",
             "source": {
                 "type": "git",
                 "url": "https://github.com/Gijsbos/logging.git",
-                "reference": "e308f637ed2b4aca7e480ce8c21c2c5fdaf7c69c"
+                "reference": "3ebe7f5f0b3e12626ec3929c67a80aabbd34494d"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/Gijsbos/logging/zipball/e308f637ed2b4aca7e480ce8c21c2c5fdaf7c69c",
-                "reference": "e308f637ed2b4aca7e480ce8c21c2c5fdaf7c69c",
+                "url": "https://api.github.com/repos/Gijsbos/logging/zipball/3ebe7f5f0b3e12626ec3929c67a80aabbd34494d",
+                "reference": "3ebe7f5f0b3e12626ec3929c67a80aabbd34494d",
                 "shasum": ""
             },
             "require": {
@@ -326,9 +326,9 @@
             ],
             "support": {
                 "issues": "https://github.com/Gijsbos/logging/issues",
-                "source": "https://github.com/Gijsbos/logging/tree/1.3.0"
+                "source": "https://github.com/Gijsbos/logging/tree/1.3.2"
             },
-            "time": "2025-11-13T21:07:49+00:00"
+            "time": "2025-11-14T15:10:18+00:00"
         },
         {
             "name": "gijsbos/php-cli-parser",
@@ -382,16 +382,16 @@
         },
         {
             "name": "gijsbos/stringfuncs",
-            "version": "1.3.4",
+            "version": "1.3.5",
             "source": {
                 "type": "git",
                 "url": "https://github.com/Gijsbos/stringfuncs.git",
-                "reference": "4271968a9481d562579d580f7f52f48e61a566f4"
+                "reference": "08cd174da4529299a5e888331aa96c069f577d00"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/Gijsbos/stringfuncs/zipball/4271968a9481d562579d580f7f52f48e61a566f4",
-                "reference": "4271968a9481d562579d580f7f52f48e61a566f4",
+                "url": "https://api.github.com/repos/Gijsbos/stringfuncs/zipball/08cd174da4529299a5e888331aa96c069f577d00",
+                "reference": "08cd174da4529299a5e888331aa96c069f577d00",
                 "shasum": ""
             },
             "require-dev": {
@@ -422,22 +422,22 @@
             ],
             "support": {
                 "issues": "https://github.com/Gijsbos/stringfuncs/issues",
-                "source": "https://github.com/Gijsbos/stringfuncs/tree/1.3.4"
+                "source": "https://github.com/Gijsbos/stringfuncs/tree/1.3.5"
             },
-            "time": "2025-11-11T10:01:10+00:00"
+            "time": "2025-11-14T12:18:12+00:00"
         },
         {
             "name": "gijsbos/yamlspeed",
-            "version": "1.0.1",
+            "version": "1.1.0",
             "source": {
                 "type": "git",
                 "url": "https://github.com/Gijsbos/yamlspeed.git",
-                "reference": "efad9f66a1aff51ed647b2048920ab2811ee1ea5"
+                "reference": "3d5f5badc38a0d4b259356f737ca9d35405a8a90"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/Gijsbos/yamlspeed/zipball/efad9f66a1aff51ed647b2048920ab2811ee1ea5",
-                "reference": "efad9f66a1aff51ed647b2048920ab2811ee1ea5",
+                "url": "https://api.github.com/repos/Gijsbos/yamlspeed/zipball/3d5f5badc38a0d4b259356f737ca9d35405a8a90",
+                "reference": "3d5f5badc38a0d4b259356f737ca9d35405a8a90",
                 "shasum": ""
             },
             "require": {
@@ -470,9 +470,9 @@
             ],
             "support": {
                 "issues": "https://github.com/Gijsbos/yamlspeed/issues",
-                "source": "https://github.com/Gijsbos/yamlspeed/tree/1.0.1"
+                "source": "https://github.com/Gijsbos/yamlspeed/tree/1.1.0"
             },
-            "time": "2025-11-11T09:32:46+00:00"
+            "time": "2025-11-14T07:18:23+00:00"
         },
         {
             "name": "paragonie/random_compat",

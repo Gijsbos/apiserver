@@ -181,6 +181,14 @@ class RouteParser extends LogEnabledClass
     }
 
     /**
+     * getReflectionMethodAttributeOfClass
+     */
+    public static function getReflectionMethodAttributeOfClass(ReflectionMethod $method, string $className)
+    {
+        return array_values(array_filter($method->getAttributes(), fn($a) => $a->getName() == $className));
+    }
+
+    /**
      * getReflectionMethodAttributeOfSubclass
      */
     public static function getReflectionMethodAttributeOfSubclass(ReflectionMethod $method, string $subclass, null|string $name = null)
@@ -201,8 +209,8 @@ class RouteParser extends LogEnabledClass
     public static function run(null|Command $command = null)
     {
         (new RouteParser($command?->getOption("cache-folder") ?? Server::$DEFAULT_CACHE_FOLDER))
-        ->setLogLevel($command?->hasFlag("v") ? "info" : "")
-        ->setLogOutput("console")
+        ->setVerbose($command instanceof Command ? $command->hasFlag("v") : null)
+        ->setVerbose($command instanceof Command ? $command->hasFlag("d") : null)
         ->parseControllerFiles();
     }
 }

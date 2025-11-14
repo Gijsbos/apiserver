@@ -9,7 +9,8 @@ use ReflectionMethod;
 interface RouteInterface
 {
     public function getRequestMethod(): string;
-    public function getPath(): string;
+    public function getPath(...$pathVariableValues) : string;
+    public function getFullPath(bool $useHTTPS = false, ...$pathVariableValues) : string;
     public function getStatusCode(): int;
     public function setStatusCode(int $statusCode);
     public function getPathPattern() : string;

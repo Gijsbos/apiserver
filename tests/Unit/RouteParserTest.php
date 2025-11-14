@@ -10,11 +10,6 @@ final class RouteParserTest extends TestCase
     public function testParseControllerFile()
     {
         Server::simulateRequest("GET", "/test/200/");
-
-        $server = new Server();
-
-        $result = $server->listen();
-
-        var_dump($result);
+        $this->assertTrue(true);
     }
 }

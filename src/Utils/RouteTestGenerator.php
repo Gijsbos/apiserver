@@ -5,7 +5,14 @@ namespace gijsbos\ApiServer\Utils;
 
 use ReflectionClass;
 use ReflectionMethod;
+use ReflectionParameter;
+use ReflectionUnionType;
+use InvalidArgumentException;
 
+use gijsbos\ApiServer\Classes\OptRequestParam;
+use gijsbos\ApiServer\Classes\RequestHeader;
+use gijsbos\ApiServer\Classes\RequestParam;
+use gijsbos\ApiServer\Classes\RequiresAuthorization;
 use gijsbos\ApiServer\Classes\ReturnFilter;
 use gijsbos\ApiServer\Classes\Route;
 use gijsbos\ApiServer\Classes\RouteAttribute;
@@ -13,6 +20,7 @@ use gijsbos\ApiServer\RouteController;
 use gijsbos\ClassParser\Classes\ClassComponent;
 use gijsbos\ClassParser\Classes\ClassObject;
 use gijsbos\ClassParser\ClassParser;
+use gijsbos\CLIParser\CLIParser\Command;
 use gijsbos\Logging\Classes\LogEnabledClass;
 
 /**
@@ -20,31 +28,12 @@ use gijsbos\Logging\Classes\LogEnabledClass;
  */
 class RouteTestGenerator extends LogEnabledClass
 {
-    const DEFAULT_CONFIG_FILE = "generator-config.json";
-
-    private string $baseUrl;
-
     /**
      * __construct
      */
     public function __construct(array $opts = [])
     {
-        parent::__construct();
-
-        $config = $this->loadConfig();
-
-        $this->baseUrl = @$opts["baseUrl"] ?? @$config["baseUrl"] ?? "http://localhost";
-    }
-
-    /**
-     * loadConfig
-     */
-    private function loadConfig()
-    {
-        if(is_file(self::DEFAULT_CONFIG_FILE))
-            return json_decode(file_get_contents(self::DEFAULT_CONFIG_FILE), true);
-
-        return [];
+        parent::__construct($opts);
     }
 
     /**
@@ -53,6 +42,14 @@ class RouteTestGenerator extends LogEnabledClass
     private function getRouteControllerClasses()
     {
         return array_values(array_filter(get_declared_classes(), fn($c) => is_subclass_of($c, RouteController::class)));
+    }
+
+    /**
+     * getRouteControllerClassMethods
+     */
+    private function getRouteControllerClassMethods(ReflectionClass $reflection)
+    {
+        return array_values(array_filter($reflection->getMethods(), fn($m) => $m->isPublic()));
     }
 
     /**
@@ -88,8 +85,8 @@ class RouteTestGenerator extends LogEnabledClass
                         declare(strict_types=1);$namespaceContent
 
                         use PHPUnit\Framework\TestCase;
-
-                        use \gijsbos\Http\Http\HTTPRequest;
+                        use gijsbos\ApiServer\Utils\RouteParser;
+                        use gijsbos\Http\Http\HTTPRequest;
 
                         $classContent
                         PHP;
@@ -151,15 +148,178 @@ class RouteTestGenerator extends LogEnabledClass
     }
 
     /**
-     * createHTTPRequest
+     * getTypesString
      */
-    private function createHTTPRequest(string $uri, array $data = [], array $headers = [])
+    public static function getTypesString(ReflectionParameter $parameter)
+    {
+        $type = $parameter->getType();
+
+        if($type instanceof ReflectionUnionType)
+        {
+            return array_map(fn($t) => $t->getName(), $type->getTypes());
+        }
+
+        return [$type->getName()];
+    }
+
+    /**
+     * createGetFullPathInlineVariables
+     */
+    private function createGetFullPathInlineVariables(Route $route)
+    {
+        $fullPathInlineVariables = implode(", ", array_map(function($name) {
+            return "\$$name";
+        }, $route->getPathVariableNames()));
+
+        // Add newline
+        if(strlen($fullPathInlineVariables) > 0)
+            $fullPathInlineVariables = ", $fullPathInlineVariables";
+
+        return $fullPathInlineVariables;
+    }
+
+    /**
+     * createMethodParameterIndex
+     */
+    private function createMethodParameterIndex(ReflectionMethod $method)
+    {
+        $requestHeaders = [];
+        $requestParams = [];
+
+        foreach($method->getParameters() as $parameter)
+        {
+            $paramName = $parameter->getName();
+            $types = self::getTypesString($parameter);
+
+            if(in_array(RequestHeader::class, $types))
+            {
+                $requestHeaders[$paramName] = [
+                    "name" => $parameter->getName(),
+                    "parameter" => $parameter,
+                    "types" => $types,
+                ];
+            }
+
+            else if(in_array(RequestParam::class, $types) || in_array(OptRequestParam::class, $types))
+            {
+                $requestParams[$paramName] = [
+                    "name" => $parameter->getName(),
+                    "parameter" => $parameter,
+                    "types" => $types,
+                ];
+            }
+        }
+
+        return [
+            "requestHeaders" => $requestHeaders,
+            "requestParams" => $requestParams,
+        ];
+    }
+
+    /**
+     * createPathVariableDefinitions
+     */
+    private function createPathVariableDefinitions(Route $route)
+    {
+        $pathVariableDefinitions = implode("\n", array_map(function($name) {
+            return "        \$$name = null;";
+        }, $route->getPathVariableNames()));
+
+        if(strlen($pathVariableDefinitions) > 0)
+            $pathVariableDefinitions = "        # Path Variables\n$pathVariableDefinitions\n\n";
+
+        return $pathVariableDefinitions;
+    }
+
+    /**
+     * createRequestParamDefinitions
+     */
+    private function createRequestParamDefinitions(array $requestParams)
+    {
+        $requestParamsDefinitions = [];
+        
+        foreach($requestParams as $paramName => $parameterData)
+        {
+            $parameter = $parameterData["parameter"];
+            $types = $parameterData["types"];
+
+            switch(true)
+            {
+                case in_array("string", $types):
+                    $requestParamsDefinitions[] = "        \$$paramName = \"\";";
+                break;
+                case in_array("int", $types):
+                case in_array("float", $types):
+                case in_array("double", $types):
+                case in_array("bool", $types):
+                    $requestParamsDefinitions[] = "        \$$paramName = null;";
+                break;
+                case in_array("array", $types):
+                    $requestParamsDefinitions[] = "        \$$paramName = [];";
+                break;
+            }
+        }
+
+        $requestParamsDefinitions = implode("\n", $requestParamsDefinitions);
+
+        if(strlen($requestParamsDefinitions) > 0)
+            $requestParamsDefinitions = "        # Request Params\n$requestParamsDefinitions\n\n";
+
+        return $requestParamsDefinitions;
+    }
+
+    /**
+     * createRequestHeaderDefinitions
+     */
+    private function createRequestHeaderDefinitions(array $requestHeaders)
+    {
+        $requestParamsDefinitions = [];
+        
+        foreach($requestHeaders as $paramName => $parameterData)
+        {
+            $parameter = $parameterData["parameter"];
+            $types = $parameterData["types"];
+
+            switch(true)
+            {
+                case ($paramName == "authorization") || ($paramName == "token"):
+                    $requestParamsDefinitions[] = "        \$token = \"\";";
+                break;
+                case in_array("string", $types):
+                    $requestParamsDefinitions[] = "        \$$paramName = \"\";";
+                break;
+                case in_array("int", $types):
+                case in_array("float", $types):
+                case in_array("double", $types):
+                case in_array("bool", $types):
+                    $requestParamsDefinitions[] = "        \$$paramName = null;";
+                break;
+                case in_array("array", $types):
+                    $requestParamsDefinitions[] = "        \$$paramName = [];";
+                break;
+            }
+        }
+
+        // Set request params
+        $requestParamsDefinitions = implode("\n", $requestParamsDefinitions);
+
+        if(strlen($requestParamsDefinitions) > 0)
+            $requestParamsDefinitions = "        # Header Params\n$requestParamsDefinitions\n\n";
+
+        return $requestParamsDefinitions;
+    }
+
+    /**
+     * createArrayContent
+     */
+    private function createArrayContent(string $fieldName, array $keyValueArray)
     {
         $dataContent = "";
-        foreach($data as $key => $value)
+        
+        foreach($keyValueArray as $key => $value)
         {
             if(strlen($dataContent) == 0)
-                $dataContent = ",\n            \"data\" => [\n";
+                $dataContent = ",\n            \"$fieldName\" => [\n";
 
             $dataContent.="                \"$key\" => $value,";
         }
@@ -167,35 +327,117 @@ class RouteTestGenerator extends LogEnabledClass
         if(strlen($dataContent))
             $dataContent = "$dataContent\n            ]";
 
-        $headerContent = "";
-        foreach($headers as $key => $value)
-        {
-            if(strlen($headerContent) == 0)
-                $headerContent = ",\n            \"headers\" => [\n";
+        return $dataContent;
+    }
 
-            $headerContent.="                \"$key\" => $value,";
+    /**
+     * getRequestDataArrayDefinition
+     */
+    private function getRequestDataArrayDefinition(array $requestParams)
+    {
+        $keyValueArray = [];
+
+        foreach($requestParams as $paramName => $paramData)
+        {
+            $keyValueArray[$paramName] = "\$$paramName";
         }
 
-        if(strlen($headerContent))
-            $headerContent = "$headerContent\n            ]";
+        return $this->createArrayContent("data", $keyValueArray);
+    }
 
+    /**
+     * getRequestHeaderArrayDefinition
+     */
+    private function getRequestHeaderArrayDefinition(array $requestHeaders)
+    {
+        $keyValueArray = [];
+
+        foreach($requestHeaders as $paramName => $paramData)
+        {
+            switch(true)
+            {
+                case ($paramName == "authorization") || ($paramName == "token"):
+                    $keyValueArray["Authorization"] = "\"Bearer \$token\"";
+                break;
+                default:
+                    $keyValueArray[$paramName] = "\$$paramName";
+            }   
+        }
+        
+        return $this->createArrayContent("headers", $keyValueArray);
+    }
+
+    /**
+     * addAuthorizationHeaderIfRequiresAuthorizationIsSet
+     */
+    private function addAuthorizationHeaderIfRequiresAuthorizationIsSet(ReflectionMethod $method, &$requestHeaders)
+    {
+        // Check for auth attribute, if set, we include an auth token
+        $authorizationAttributes = RouteParser::getReflectionMethodAttributeOfClass($method, RequiresAuthorization::class);
+
+        // Found authorization attributes
+        if(count($authorizationAttributes))
+        {
+            if(!array_key_exists("authorization", $requestHeaders) && !array_key_exists("token", $requestHeaders))
+            {
+                $requestHeaders["token"] = [
+                    "name" => "token",
+                    "types" => ["string"]
+                ];
+            }
+        }
+    }
+
+    /**
+     * createHTTPRequest
+     */
+    private function createHTTPRequest(ReflectionMethod $method, Route $route, array $headers = [])
+    {
+        $methodParameterIndex = $this->createMethodParameterIndex($method);
+        $requestHeaders = $methodParameterIndex["requestHeaders"];
+        $requestParams = $methodParameterIndex["requestParams"];
+
+        // Check for requires auth
+        $this->addAuthorizationHeaderIfRequiresAuthorizationIsSet($method, $requestHeaders);
+
+        // Create variable definitions
+        $pathVariableDefinitions = $this->createPathVariableDefinitions($route);
+        $requestParamsDefinitions = $this->createRequestParamDefinitions($requestParams);
+        $requestHeadersDefinitions = $this->createRequestHeaderDefinitions($requestHeaders);
+
+        // For request
+        $requestDataArrayDefinition = $this->getRequestDataArrayDefinition($requestParams);
+        $requestHeaderArrayDefinition = $this->getRequestHeaderArrayDefinition($requestHeaders);
+        $requestMethod = strtolower($route->getRequestMethod());
+        $methodName = $method->getName();
+        $className = $method->getDeclaringClass()->getName();
+        $getFullPathInlineVariables = $this->createGetFullPathInlineVariables($route);
+        $uri = "RouteParser::getRoute('$methodName', '$className')->getFullPath(false$getFullPathInlineVariables)";
+
+        // Return body
         return <<<PHP
-HTTPRequest::get([
-            "uri" => "$uri"$dataContent$headerContent
+$pathVariableDefinitions$requestParamsDefinitions$requestHeadersDefinitions        # Send Request\n        \$response = HTTPRequest::$requestMethod([
+            "uri" => $uri$requestDataArrayDefinition$requestHeaderArrayDefinition
         ]);
 PHP;
     }
 
     /**
-     * createGetMethod
+     * createTestMethod
      */
-    private function createGetMethod(ReflectionMethod $method, Route $route, ClassObject &$classObject)
+    private function createTestMethod(ReflectionMethod $method, Route $route, ClassObject &$classObject)
     {
         $testFunctionName = "test" . ucfirst($method->getName());
 
         // Create method
         if($classObject->hasMethod($testFunctionName))
+        {
+            log_debug("Skipping, test method '$testFunctionName' already exists");
             return true;
+        }
+
+        // Parsing
+        log_info("Creating test method: " . $testFunctionName);
 
         // Get returnFilter
         $returnFilter = RouteParser::getReflectionMethodAttributeOfSubclass($method, RouteAttribute::class, ReturnFilter::class);
@@ -204,29 +446,16 @@ PHP;
         if($returnFilter !== false)
             $returnFilter = $returnFilter->newInstance();
 
-        // Get path
-        $uri = $this->baseUrl . str_must_start_with(str_replace("{", "{\$", $route->getPath()), "/");
-
-        // Get path vars
-        $pathVariables = implode("\n", array_map(function($name) {
-            return "        \$$name = null;";
-        }, $route->getPathVariableNames()));
-
-        // Add newline
-        if(strlen($pathVariables) > 0)
-            $pathVariables = "$pathVariables\n";
-
         // Create component
         $testMethod = $this->createUnitTestMethod($testFunctionName);
 
         // Create content
-        $httpRequestContent = $this->createHTTPRequest($uri);
+        $httpRequestContent = $this->createHTTPRequest($method, $route);
 
         // Add body
         $testMethod->body = <<< EOD
-$pathVariables
-        \$response = $httpRequestContent\n
-        \$this->assertTrue(\$response->isSuccessful());
+$httpRequestContent\n
+        # Test Result\n        \$this->assertTrue(\$response->isSuccessful(), !\$response->isSuccessful() ? (\$response?->getParameter("errorDescription") ?? \$response?->getParameter("response")) : "");
 EOD;
 
         // Add
@@ -234,37 +463,33 @@ EOD;
     }
 
     /**
-     * generate
+     * generateTests
      */
-    public function generate(string $outputFolder = "tests/auto")
+    public function generateTests(string $outputFolder)
     {
-        $classes = $this->getRouteControllerClasses();
+        if(strlen($outputFolder) == 0)
+            throw new InvalidArgumentException("Argument 1 'outputFolder' is not set");
 
-        foreach($classes as $class)
+        foreach($this->getRouteControllerClasses() as $class)
         {
-            log_info("Parsing class: " . $class);
-
-            $reflection = new ReflectionClass($class);
+            log_info("Reading class: " . $class);
 
             $classObject = null; 
 
-            $publicMethods = array_values(array_filter($reflection->getMethods(), fn($m) => $m->isPublic()));
+            $reflection = new ReflectionClass($class);
 
-            foreach($publicMethods as $method)
+            foreach($this->getRouteControllerClassMethods($reflection) as $method)
             {
                 $route = RouteParser::getReflectionMethodAttributeOfSubclass($method, Route::class);
 
-                // Skip method
                 if(count($route) == 0)
                 {
-                    log_debug("Route not defined, skipping");
+                    log_debugf("Route not defined in '%s', skipping", $method->getName());
                     continue;
                 }
 
-                // Create instance
+                // Create new route instance
                 $route = reset($route);
-
-                // Create instance
                 $route = $route->newInstance();
 
                 // We create the object after we are sure there are routes in it.
@@ -272,32 +497,41 @@ EOD;
                     $classObject = $this->getTestController($reflection, $outputFolder);
 
                 // Parsing
-                log_info("Parsing method: " . $method->getName());
+                log_info("Reading method: " . $method->getName());
                 
                 // SetupBeforeClass
                 if(!$classObject->hasMethod('createSetupBeforeClassMethod'))
-                {
                     $this->createSetupBeforeClassMethod($classObject);
-                }
 
                 // Add SetUP
                 if(!$classObject->hasMethod('setUp'))
-                {
                     $this->createSetUpMethod($classObject);
-                }
 
-                switch($route->getRequestMethod())
-                {
-                    case "GET":
-                        $this->createGetMethod($method, $route, $classObject);
-                }
+                // Create test method (checks if added inside function)
+                $this->createTestMethod($method, $route, $classObject);
             } 
             
+            // Output content in output folder
             if($classObject !== null)
             {
-                var_dump($classObject->toString());exit();
                 file_put_contents($classObject->getFileName(), $classObject->toString());
             }
         }
+    }
+
+    /**
+     * run
+     */
+    public static function run(null|Command $command = null)
+    {
+        $outputFolder = $command->getNextArg();
+
+        if(!is_string($outputFolder))
+            exit("usage: api create tests <outputFolder>");
+
+        (new self())
+        ->setVerbose($command instanceof Command ? $command->hasFlag("v") : null)
+        ->setVerbose($command instanceof Command ? $command->hasFlag("d") : null)
+        ->generateTests($outputFolder);
     }
 }

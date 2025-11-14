@@ -24,7 +24,7 @@ class TestController extends RouteController
     #[ReturnFilter(['name','id'])]
     public function getTest(
         PathVariable|string $id = new PathVariable(["min" => 0, "max" => 4, "required" => false]),
-        RequestParam|string $name = new RequestParam(["min" => 0, "max" => 10, "pattern" => "/^[a-z]+$/", "required" => false, "default" => "john"]),
+        RequestParam|string $name = new RequestParam(["min" => 0, "max" => 10, "pattern" => "/^[\w]+$/", "required" => false, "default" => "john"]),
     )
     {
         return [
@@ -40,7 +40,7 @@ class TestController extends RouteController
     #[ReturnFilter(['name','id'])]
     public function postTest(
         PathVariable|int $id = new PathVariable(["min" => 0, "max" => 4, "required" => false]),
-        RequestParam|string $name = new RequestParam(["pattern" => "/^[a-z]+$/", "required" => true]),
+        RequestParam|string $name = new RequestParam(["pattern" => "/^[\w]+$/", "required" => true]),
     )
     {
         return [
@@ -56,7 +56,7 @@ class TestController extends RouteController
     #[ReturnFilter(['name','id'])]
     public function putTest(
         PathVariable|int $id = new PathVariable(["min" => 0, "max" => 4, "required" => false]),
-        RequestParam|string $name = new RequestParam(["pattern" => "/^[a-z]+$/", "required" => false]),
+        RequestParam|string $name = new RequestParam(["pattern" => "/^[\w]+$/", "required" => false]),
     )
     {
         return [
@@ -72,7 +72,7 @@ class TestController extends RouteController
     #[ReturnFilter(['name','id'])]
     public function deleteTest(
         PathVariable|int $id = new PathVariable(["min" => 0, "max" => 4, "required" => false]),
-        RequestParam|string $name = new RequestParam(["pattern" => "/^[a-z]+$/", "required" => false]),
+        RequestParam|string $name = new RequestParam(["pattern" => "/^[\w]+$/", "required" => false]),
     )
     {
         return [

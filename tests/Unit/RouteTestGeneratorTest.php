@@ -12,6 +12,19 @@ final class RouteTestGeneratorTest extends TestCase
     {
         $generator = new RouteTestGenerator();
 
-        $generator->generate("cache/Files/RouteTestGenerator");
+        $outputFolder = "temp/GeneratedTests";
+
+        // Set expectation
+        $expectedOutputFile = "$outputFolder/TestControllerTest.php";
+
+        // Remove if exists
+        if(is_file($expectedOutputFile))
+            unlink($expectedOutputFile);
+
+        // Generate tests
+        $generator->generateTests($outputFolder);
+
+        // File exists
+        $this->assertTrue(is_file("$outputFolder/TestControllerTest.php"));
     }
 }

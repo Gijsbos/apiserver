@@ -18,9 +18,34 @@ class RequestHeader extends RouteParam
     }
 
     /**
+     * normalizeHeaders
+     */
+    private static function normalizeHeaders(array $headers)
+    {
+        return array_map_assoc(function($k, $v) {
+            return [self::normalizeHeader($k), $v];
+        }, $headers);
+    }
+
+    /**
+     * getAllHeaders
+     */
+    private static function getAllHeaders(?string $headerName = null)
+    {
+        $headers = self::normalizeHeaders(@getallheaders() ?? []);
+
+        if(is_string($headerName))
+        {
+            return @$headers[$headerName];
+        }
+
+        return $headers;
+    }
+
+    /**
      * getHeader
      */
-    public static function getHeader(string $headerName): ?string
+    public static function getHeader(string $headerName, bool $includeServerHeaders = false): ?string
     {
         $key = self::normalizeHeader($headerName);
 
@@ -37,12 +62,15 @@ class RequestHeader extends RouteParam
         }
 
         // Normalize remaining headers
-        $headers = array_merge($_SERVER, array_map_assoc(function($k, $v)
+        if($includeServerHeaders)
         {
-            return [self::normalizeHeader($k), $v];
-        }, getallheaders()));
+            $serverHeaders = self::normalizeHeaders($_SERVER);
 
-        // Return
-        return @$headers[$key];
+            return @$serverHeaders[$key] ?? self::getAllHeaders($key); // Looks in server headers, then the get all headers
+        }
+        else
+        {
+            return self::getAllHeaders($key);
+        }
     }
 }

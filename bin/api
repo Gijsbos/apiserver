@@ -19,6 +19,7 @@ else
 
 use gijsbos\CLIParser\CLIParser\CommandLineParser;
 use gijsbos\ApiServer\Utils\RouteParser;
+use gijsbos\ApiServer\Utils\RouteTestGenerator;
 
 /**
  * APICLI
@@ -57,6 +58,15 @@ final class APICLI
                         {
                             case "routes":
                                 RouteParser::run($command);
+                            break;
+                        }
+                    break;
+
+                    case "create":
+                        switch($command->getNextArg())
+                        {
+                            case "tests":
+                                RouteTestGenerator::run($command);
                             break;
                         }
                     break;

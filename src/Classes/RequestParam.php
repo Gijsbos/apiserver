@@ -31,8 +31,10 @@ class RequestParam extends RouteParam
                     throw new BadRequestException("jsonInputInvalid", "Payload is not valid json");
 
                 $data = json_decode($input, true);
+            break;
 
             case "application/x-www-form-urlencoded":
+            default:
                 parse_str($input, $data); // form-like payload
         }
 
@@ -51,7 +53,7 @@ class RequestParam extends RouteParam
         if(!is_array($requestData))
             throw new BadRequestException("requestBodyInvalid", "Request body does not contain valid data");
 
-        return $requestData[$parameterName];
+        return @$requestData[$parameterName];
     }
 
     public static function extractValueFromGlobals(string $requestMethod, string $parameterName, null|string $type = null)

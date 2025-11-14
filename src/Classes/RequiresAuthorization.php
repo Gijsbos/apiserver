@@ -8,6 +8,9 @@ use gijsbos\Http\Exceptions\UnauthorizedException;
 
 /**
  * RequiresAuthorization
+ *  Use this to create an attribute that checks the token validity.
+ * 
+ *  !IMPORTANT! THIS IS ONLY A STUB THAT CHECKS IF A TOKEN IS PRESENT, NOT IF IT IS VALID!
  */
 #[Attribute(Attribute::TARGET_METHOD)]
 class RequiresAuthorization extends ExecuteBeforeRoute
@@ -24,14 +27,10 @@ class RequiresAuthorization extends ExecuteBeforeRoute
 
         $authorization = trim($authorization);
 
-        if(($p = stripos($authorization, "bearer ")) !== false)
-        {
-            return substr($authorization, $p + strlen("bearer "));
-        }
-        else
-        {
-            return $authorization;
-        }
+        if(!preg_match("/^bearer\s+(.+)/i", $authorization, $matches))
+            throw new UnauthorizedException("tokenFormatInvalid", "Please provide a valid bearer token");
+
+        return $matches[1];
     }
 
     /**
