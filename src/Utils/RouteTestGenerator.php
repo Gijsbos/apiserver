@@ -55,7 +55,7 @@ class RouteTestGenerator extends LogEnabledClass
     /**
      * getTestController
      */
-    private function getTestController(ReflectionClass $reflection, string $outputFolder)
+    private function getTestController(ReflectionClass $reflection, string $outputFolder, null|bool &$fileAlreadyExists = null)
     {
         // Get controller name
         $testControllerName = $reflection->getShortName() . "Test";
@@ -64,8 +64,13 @@ class RouteTestGenerator extends LogEnabledClass
         $filePath = "$outputFolder/$testControllerName.php";
 
         // Return existing file
-        if(is_file($filePath))
+        if($exists = is_file($filePath))
+        {
+            if($fileAlreadyExists === null)
+                $fileAlreadyExists = $exists;
+
             return ClassParser::parse($filePath);
+        }
         
         // Create class and add methods
         $classComponent = new ClassComponent(ClassComponent::NEW_CLASS, $testControllerName, null, "/**\n * $testControllerName\n */");
@@ -99,7 +104,7 @@ class RouteTestGenerator extends LogEnabledClass
         file_put_contents($filePath, $fileContent);
 
         // Return with file now existing
-        return $this->getTestController($reflection, $outputFolder);
+        return $this->getTestController($reflection, $outputFolder, $exists);
     }
 
     /**
@@ -500,17 +505,17 @@ EOD;
 
                 // We create the object after we are sure there are routes in it.
                 if($classObject == null)
-                    $classObject = $this->getTestController($reflection, $outputFolder);
+                    $classObject = $this->getTestController($reflection, $outputFolder, $fileAlreadyExists);
 
                 // Parsing
                 log_info("Reading method: " . $method->getName());
                 
-                // SetupBeforeClass
-                if(!$classObject->hasMethod('setupBeforeClass'))
+                // SetupBeforeClass $fileAlreadyExists makes sure the method is only created on file creation, not afterwards
+                if(!$fileAlreadyExists && !$classObject->hasMethod('setupBeforeClass'))
                     $this->createSetupBeforeClassMethod($classObject);
 
                 // Add SetUp
-                if(!$classObject->hasMethod('setUp'))
+                if(!$fileAlreadyExists && !$classObject->hasMethod('setUp'))
                     $this->createSetUpMethod($classObject);
 
                 // Create test method (checks if added inside function)
