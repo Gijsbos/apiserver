@@ -4,6 +4,7 @@ declare(strict_types=1);
 namespace gijsbos\ApiServer\Classes;
 
 use Attribute;
+use Exception;
 
 /**
  * ReturnFilter
@@ -31,103 +32,114 @@ class ReturnFilter extends RouteAttribute
     }
 
     /**
-     * getIncludeFilter
+     * applyFilter
      */
-    private function getIncludeFilter() : array
+    public function applyFilter(array $data, null|array &$filter = null) : array
     {
-        $include = [];
+        $filter = $filter ?? $this->filter ?? [];
 
-        foreach($this->filter as $key => $value)
+        // Deal with list arrays
+        foreach($data as $key => $value)
         {
+            // Sequential value
             if(is_int($key))
             {
-                // Exclude '!' ignore operator and empty strings
-                if(strpos($value, "!") === false && strlen($value) > 0)
-                    array_push($include, self::santizeReturnDataKey($value));
-            }
-            else
-            {
+                // Value is List Item, Keep Filter The Same, Go n+1 deeper
                 if(is_array($value))
                 {
-                    // Recursively call filter one level deeper
-                    $value = self::getIncludeFilter($value);
+                    $data[$key] = $this->applyFilter($value, $filter);
+                }
+            }
 
-                    if(strpos($key, "?") !== false)
+            // Assoc value
+            else
+            {
+                $filterBehaviour = "include";
+                $filterType = "string";
+
+                if(in_array($key, $filter)) // e.g. 'foo' from data in filter ['foo', 'bar']
+                {
+                    $filterKey = $key;
+                }
+                else if(array_key_exists($key, $filter)) // e.g. 'foo' from data in filter ['foo' => [], 'bar' => []]
+                {
+                    $filterKey = $key;
+                    $filterType = "array";
+                }
+                else if(in_array("!$key", $filter) || in_array("$key!", $filter))
+                {
+                    
+                    $filterKey = in_array("!$key", $filter) ? "!$key" : "$key!";
+                    $filterBehaviour = "exclude";
+                }
+                else if(array_key_exists("!$key", $filter) || array_key_exists("$key!", $filter))
+                {
+                    $filterKey = array_key_exists("!$key", $filter) ? "!$key" : "$key!";
+                    $filterBehaviour = "exclude";
+                    $filterType = "array";
+                }
+                else if(in_array("?$key", $filter) || in_array("$key?", $filter))
+                {
+                    $filterKey = in_array("?$key", $filter) ? "?$key" : "$key?";
+                }
+                else if(array_key_exists("?$key", $filter) || array_key_exists("$key?", $filter))
+                {
+                    $filterKey = array_key_exists("?$key", $filter) ? "?$key" : "$key?";
+                    $filterType = "array";
+                }
+                else
+                {
+                    $filterKey = null;
+                }
+
+                // Filter is set and represents the actual filter key that can be used to filter out stuff from data
+                if($filterKey !== null)
+                {
+                    if($filterType == "string")
                     {
-                        $key = self::santizeReturnDataKey($key);
-
-                        if(count($value))
+                        if($filterBehaviour == "include")
                         {
-                            $include[$key] = $value;
+                            $data[$key] = $data[$key]; // Retains the WHOLE assoc array, since filterType is 'string'
+                        }
+
+                        else
+                        {
+                            unset($data[$key]); // Exclude
+                        }
+                    }
+                    else if($filterType == "array")
+                    {
+                        if(is_array($value))
+                        {
+                            if($filterBehaviour == "include")
+                            {
+                                $data[$key] = $this->applyFilter($data[$key], $filter[$filterKey]); // Retains the WHOLE assoc array, since filterType is 'string'
+                            }
+
+                            else
+                            {
+                                unset($data[$key]); // Exclude
+                            }
                         }
                         else
-                            array_push($include, $key);
+                        {
+                            if($filterBehaviour == "include")
+                            {
+                                $data[$key] = $data[$key]; // Retains the WHOLE assoc array, since filterType is 'string'
+                            }
+
+                            else
+                            {
+                                unset($data[$key]); // Exclude
+                            }
+                        }
                     }
-                    else
-                    {
-                        $include[$key] = $value;
-                    }
+                    else 
+                        throw new Exception("Invalid filter type value $filterType");
                 }
             }
         }
 
-        return $include;
-    }
-
-    /**
-     * getExcludeFilter
-     */
-    private function getExcludeFilter()
-    {
-        return array_filter(array_map_assoc(function($key, $value)
-        {
-            if(is_array($value))
-                $value = self::getExcludeFilter($value);
-
-            if(is_int($key) && is_string($value))
-                $value = strpos($value, "!") !== false ? self::santizeReturnDataKey($value) : null;
-
-            if(is_string($key))
-            {
-                if(strpos($key, "!") === false && !is_array($value))
-                {
-                    // Show warning? Comma missing, malformed?    
-                }
-
-                if(strpos($key, "!") !== false)
-                    $key = self::santizeReturnDataKey($key);
-
-                else if(is_array($value) && count($value))
-                    $key = self::santizeReturnDataKey($key);
-
-                else
-                    $key = null;
-            }
-
-            return [$key, $value];
-        }, $this->filter));
-    }
-
-    /**
-     * applyFilter
-     */
-    public function applyFilter(array $data) : array
-    {
-        // Clear the optional sign '?' which is used for testing
-        $includeFilter = self::getIncludeFilter();
-
-        // Get filtered data
-        if(count($includeFilter))
-            $data = array_filter_keys_recursive($data, $includeFilter, true, true);
-
-        // Get exclude filter
-        $excludeFilter = self::getExcludeFilter();
-
-        // Get filtered data
-        if(count($excludeFilter))
-            $data = array_filter_keys_recursive($data, $excludeFilter, true, false);
-
-        // Return data
         return $data;
     }
 }
