@@ -135,16 +135,16 @@
         },
         {
             "name": "gijsbos/classparser",
-            "version": "1.0.0",
+            "version": "1.1.0",
             "source": {
                 "type": "git",
                 "url": "https://github.com/Gijsbos/classparser.git",
-                "reference": "2be119c791ec6c89985d0f270c88e06514f49415"
+                "reference": "17fc7ec2093875113aa05c272e431924c75818c0"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/Gijsbos/classparser/zipball/2be119c791ec6c89985d0f270c88e06514f49415",
-                "reference": "2be119c791ec6c89985d0f270c88e06514f49415",
+                "url": "https://api.github.com/repos/Gijsbos/classparser/zipball/17fc7ec2093875113aa05c272e431924c75818c0",
+                "reference": "17fc7ec2093875113aa05c272e431924c75818c0",
                 "shasum": ""
             },
             "require": {
@@ -176,9 +176,9 @@
             ],
             "support": {
                 "issues": "https://github.com/Gijsbos/classparser/issues",
-                "source": "https://github.com/Gijsbos/classparser/tree/1.0.0"
+                "source": "https://github.com/Gijsbos/classparser/tree/1.1.0"
             },
-            "time": "2025-11-09T22:16:05+00:00"
+            "time": "2025-11-15T06:47:41+00:00"
         },
         {
             "name": "gijsbos/extfuncs",
@@ -233,16 +233,16 @@
         },
         {
             "name": "gijsbos/http",
-            "version": "1.2.0",
+            "version": "1.2.1",
             "source": {
                 "type": "git",
                 "url": "https://github.com/Gijsbos/http.git",
-                "reference": "7b6b2614ba3fec0ff5451376ea33fbaeb134a286"
+                "reference": "c43d0809c637cfa64045eee2bf9455f9468b41dc"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/Gijsbos/http/zipball/7b6b2614ba3fec0ff5451376ea33fbaeb134a286",
-                "reference": "7b6b2614ba3fec0ff5451376ea33fbaeb134a286",
+                "url": "https://api.github.com/repos/Gijsbos/http/zipball/c43d0809c637cfa64045eee2bf9455f9468b41dc",
+                "reference": "c43d0809c637cfa64045eee2bf9455f9468b41dc",
                 "shasum": ""
             },
             "require": {
@@ -277,9 +277,9 @@
             ],
             "support": {
                 "issues": "https://github.com/Gijsbos/http/issues",
-                "source": "https://github.com/Gijsbos/http/tree/1.2.0"
+                "source": "https://github.com/Gijsbos/http/tree/1.2.1"
             },
-            "time": "2025-11-13T21:18:15+00:00"
+            "time": "2025-11-15T06:31:58+00:00"
         },
         {
             "name": "gijsbos/logging",
