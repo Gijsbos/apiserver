@@ -506,7 +506,7 @@ EOD;
                 log_info("Reading method: " . $method->getName());
                 
                 // SetupBeforeClass
-                if(!$classObject->hasMethod('createSetupBeforeClassMethod'))
+                if(!$classObject->hasMethod('setUpBeforeClass'))
                     $this->createSetupBeforeClassMethod($classObject);
 
                 // Add SetUP
