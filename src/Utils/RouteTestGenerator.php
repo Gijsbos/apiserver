@@ -461,7 +461,7 @@ PHP;
         // Add body
         $testMethod->body = <<< EOD
 $httpRequestContent\n
-        # Test Result\n        \$this->assertTrue(\$response->isSuccessful(), !\$response->isSuccessful() ? (\$response?->getParameter("errorDescription") ?? \$response?->getParameter("response")) : "");
+        # Test Result\n        \$this->assertTrue(\$response->isSuccessful(), \$response->getErrorString());
 EOD;
 
         // Add
