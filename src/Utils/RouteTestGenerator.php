@@ -461,7 +461,7 @@ PHP;
         // Add body
         $testMethod->body = <<< EOD
 $httpRequestContent\n
-        # Test Result\n        \$this->assertTrue(\$response->isSuccessful(), \$response->getErrorString());
+        # Test Result\n        \$this->assertTrue(\$response->isSuccessful(), !\$response->isSuccessful() ? (\$response?->getParameter("errorDescription") ?? \$response?->getParameter("response")) : "");
 EOD;
 
         // Add
@@ -506,10 +506,10 @@ EOD;
                 log_info("Reading method: " . $method->getName());
                 
                 // SetupBeforeClass
-                if(!$classObject->hasMethod('setUpBeforeClass'))
+                if(!$classObject->hasMethod('setupBeforeClass'))
                     $this->createSetupBeforeClassMethod($classObject);
 
-                // Add SetUP
+                // Add SetUp
                 if(!$classObject->hasMethod('setUp'))
                     $this->createSetUpMethod($classObject);
 
