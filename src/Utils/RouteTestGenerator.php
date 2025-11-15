@@ -412,7 +412,7 @@ class RouteTestGenerator extends LogEnabledClass
         $methodName = $method->getName();
         $className = $method->getDeclaringClass()->getName();
         $getFullPathInlineVariables = $this->createGetFullPathInlineVariables($route);
-        $uri = "RouteParser::getRoute(['$className', '$method'])->getFullPath(false$getFullPathInlineVariables)";
+        $uri = "RouteParser::getRoute(['$className', '$methodName'])->getFullPath(false$getFullPathInlineVariables)";
 
         // Return body
         return <<<PHP
@@ -514,6 +514,7 @@ EOD;
             // Output content in output folder
             if($classObject !== null)
             {
+                var_dump($classObject->toString());exit();
                 file_put_contents($classObject->getFileName(), $classObject->toString());
             }
         }
