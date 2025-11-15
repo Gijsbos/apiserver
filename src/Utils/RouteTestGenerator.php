@@ -375,8 +375,14 @@ class RouteTestGenerator extends LogEnabledClass
         // Check for auth attribute, if set, we include an auth token
         $authorizationAttributes = RouteParser::getReflectionMethodAttributeOfClass($method, RequiresAuthorization::class);
 
+        // Merge with props that inherit from RequiresAuthorization::class
+        $authorizationAttributesInherited = RouteParser::getReflectionMethodAttributeOfSubclass($method, RequiresAuthorization::class);
+
+        // Merge
+        $merged = array_merge($authorizationAttributes, $authorizationAttributesInherited);
+
         // Found authorization attributes
-        if(count($authorizationAttributes))
+        if(count($merged))
         {
             if(!array_key_exists("authorization", $requestHeaders) && !array_key_exists("token", $requestHeaders))
             {
