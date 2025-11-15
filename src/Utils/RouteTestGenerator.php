@@ -514,7 +514,6 @@ EOD;
             // Output content in output folder
             if($classObject !== null)
             {
-                var_dump($classObject->toString());exit();
                 file_put_contents($classObject->getFileName(), $classObject->toString());
             }
         }
