@@ -319,9 +319,9 @@ class RouteTestGenerator extends LogEnabledClass
         foreach($keyValueArray as $key => $value)
         {
             if(strlen($dataContent) == 0)
-                $dataContent = ",\n            \"$fieldName\" => [\n";
+                $dataContent = ",\n            \"$fieldName\" => [";
 
-            $dataContent.="                \"$key\" => $value,";
+            $dataContent.="\n                \"$key\" => $value,";
         }
 
         if(strlen($dataContent))
