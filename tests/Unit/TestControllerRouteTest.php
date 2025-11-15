@@ -26,7 +26,7 @@ class TestControllerRouteTest extends TestCase
 
         # Send Request
         $response = HTTPRequest::get([
-            "uri" => RouteParser::getRoute('getTest', 'TestController')->getFullPath(false, $id),
+            "uri" => RouteParser::getRoute(['TestController', 'getTest'])->getFullPath(false, $id),
             "data" => [
                 "name" => $name,
             ]
@@ -46,7 +46,7 @@ class TestControllerRouteTest extends TestCase
 
         # Send Request
         $response = HTTPRequest::post([
-            "uri" => RouteParser::getRoute('postTest', 'TestController')->getFullPath(false, $id),
+            "uri" => RouteParser::getRoute(['TestController', 'postTest'])->getFullPath(false, $id),
             "data" => [
                 "name" => $name,
             ]
@@ -66,7 +66,7 @@ class TestControllerRouteTest extends TestCase
 
         # Send Request
         $response = HTTPRequest::put([
-            "uri" => RouteParser::getRoute('putTest', 'TestController')->getFullPath(false, $id),
+            "uri" => RouteParser::getRoute(['TestController', 'putTest'])->getFullPath(false, $id),
             "data" => [
                 "name" => $name,
             ]
@@ -86,7 +86,7 @@ class TestControllerRouteTest extends TestCase
 
         # Send Request
         $response = HTTPRequest::delete([
-            "uri" => RouteParser::getRoute('deleteTest', 'TestController')->getFullPath(false, $id),
+            "uri" => RouteParser::getRoute(['TestController', 'deleteTest'])->getFullPath(false, $id),
             "data" => [
                 "name" => $name,
             ]
@@ -103,7 +103,7 @@ class TestControllerRouteTest extends TestCase
 
         # Send Request
         $response = HTTPRequest::get([
-            "uri" => RouteParser::getRoute('requiresAuthorization', 'TestController')->getFullPath(false),
+            "uri" => RouteParser::getRoute(['TestController', 'requiresAuthorization'])->getFullPath(false),
             "headers" => [
                 "Authorization" => "Bearer $token",
             ]

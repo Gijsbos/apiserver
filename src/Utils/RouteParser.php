@@ -17,6 +17,7 @@ use gijsbos\ApiServer\RouteController;
 use gijsbos\ApiServer\Server;
 use gijsbos\CLIParser\CLIParser\Command;
 use gijsbos\Logging\Classes\LogEnabledClass;
+use LogicException;
 
 /**
  * RouteParser
@@ -82,8 +83,16 @@ class RouteParser extends LogEnabledClass
     /**
      * getRoute
      */
-    public static function getRoute(string|ReflectionMethod $method, null|string $className = null)
+    public static function getRoute(string|array|ReflectionMethod $method, null|string $className = null)
     {
+        if(is_array($method) && is_null($className))
+        {
+            if(count($method) !== 2)
+                throw new InvalidArgumentException("Argument 1 'method' using array must be of format [className, method]");
+
+            [$className, $method] = $method;
+        }
+
         if(is_string($method))
         {
             if(!is_string($className))
