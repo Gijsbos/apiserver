@@ -346,6 +346,14 @@ class Route implements RouteInterface
     }
 
     /**
+     * getClassMethod
+     */
+    public function getClassMethod() : null|string
+    {
+        return $this->className . "::" . $this->methodName;
+    }
+
+    /**
      * getReflectionClassMethod
      */
     public function getReflectionClassMethod() : ReflectionMethod
