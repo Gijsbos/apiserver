@@ -29,6 +29,7 @@
         "gijsbos/php-cli-parser": "^1.0",
         "gijsbos/http": "^1.2",
         "gijsbos/logging": "^1.2",
-        "gijsbos/classparser": "^1.0"
+        "gijsbos/extfuncs": "^1.5",
+        "gijsbos/classparser": "^1.1"
     }
 }

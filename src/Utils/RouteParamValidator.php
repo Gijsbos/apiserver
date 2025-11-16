@@ -3,12 +3,12 @@ declare(strict_types=1);
 
 namespace gijsbos\ApiServer\Utils;
 
-use gijsbos\ApiServer\Classes\Pattern;
 use LogicException;
-use gijsbos\ApiServer\Classes\RouteParam;
-use gijsbos\Http\Exceptions\BadRequestException;
 use InvalidArgumentException;
 use ReflectionProperty;
+use gijsbos\ExtFuncs\Attributes\RegExp;
+use gijsbos\ApiServer\Classes\RouteParam;
+use gijsbos\Http\Exceptions\BadRequestException;
 
 /**
  * RouteParamValidator
@@ -45,7 +45,7 @@ abstract class RouteParamValidator
     {
         $property = new ReflectionProperty($className, $propertyName);
 
-        $patterns = array_values(array_filter($property->getAttributes(), fn($a) => $a->getName() == Pattern::class));
+        $patterns = array_values(array_filter($property->getAttributes(), fn($a) => $a->getName() == RegExp::class || is_subclass_of($a->getName(), RegExp::class)));
 
         if(count($patterns) == 0)
             throw new LogicException("Property '{$propertyName}' does not define the 'Pattern' attribute in class '$className'");
