@@ -14,7 +14,8 @@ class RequestHeader extends RouteParam
      */
     private static function normalizeHeader(string $headerName)
     {
-        return 'HTTP_' . strtoupper(str_replace('-', '_', $headerName));
+        $headerName = strtoupper(str_replace('-', '_', $headerName));
+        return str_starts_with($headerName, "HTTP_") ? $headerName : "HTTP_" . $headerName;
     }
 
     /**
@@ -28,24 +29,9 @@ class RequestHeader extends RouteParam
     }
 
     /**
-     * getAllHeaders
-     */
-    private static function getAllHeaders(?string $headerName = null)
-    {
-        $headers = self::normalizeHeaders(@getallheaders() ?? []);
-
-        if(is_string($headerName))
-        {
-            return @$headers[$headerName];
-        }
-
-        return $headers;
-    }
-
-    /**
      * getHeader
      */
-    public static function getHeader(string $headerName, bool $includeServerHeaders = false): ?string
+    public static function getHeader(string $headerName): ?string
     {
         $key = self::normalizeHeader($headerName);
 
@@ -62,15 +48,9 @@ class RequestHeader extends RouteParam
         }
 
         // Normalize remaining headers
-        if($includeServerHeaders)
-        {
-            $serverHeaders = self::normalizeHeaders($_SERVER);
+        $serverHeaders = self::normalizeHeaders($_SERVER);
 
-            return @$serverHeaders[$key] ?? self::getAllHeaders($key); // Looks in server headers, then the get all headers
-        }
-        else
-        {
-            return self::getAllHeaders($key);
-        }
+        // Return key
+        return @$serverHeaders[$key] ?? (function_exists('getallheaders') ? @\getallheaders()[$key] : null);
     }
 }
