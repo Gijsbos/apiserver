@@ -17,18 +17,22 @@ class RequiresAuthorization extends ExecuteBeforeRoute
 {
     /**
      * extractAuthorizationToken
+     *  Note: Apache no longer sends headers by default, use the following to enable headers:
+     * 
+     *      RewriteCond %{HTTP:Authorization} ^(.*)
+     *      RewriteRule .* - [e=HTTP_AUTHORIZATION:%1]
      */
     public static function extractAuthorizationToken() : string
     {
         $authorization = RequestHeader::getHeader('authorization');
 
-        if($authorization === null)
-            throw new UnauthorizedException("tokenRequired", "Access token required");
+        if(!is_string($authorization) || strlen($authorization) == 0)
+            throw new UnauthorizedException("tokenRequired", "Token required");
 
         $authorization = trim($authorization);
 
         if(!preg_match("/^bearer\s+(.+)/i", $authorization, $matches))
-            throw new UnauthorizedException("tokenFormatInvalid", "Please provide a valid bearer token");
+            throw new UnauthorizedException("tokenFormatInvalid", "Token invalid, expects bearer token");
 
         return $matches[1];
     }
