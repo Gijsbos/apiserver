@@ -8,8 +8,8 @@ use RuntimeException;
 use Throwable;
 use TypeError;
 use ReflectionClass;
-use ReflectionAttribute;
 
+use gijsbos\Http\Response;
 use gijsbos\ApiServer\Classes\RequestHeader;
 use gijsbos\ApiServer\Classes\ReturnFilter;
 use gijsbos\ApiServer\Classes\Route;
@@ -20,7 +20,6 @@ use gijsbos\ApiServer\Interfaces\RouteInterface;
 use gijsbos\ApiServer\Utils\ArrayToXmlParser;
 use gijsbos\ApiServer\Utils\RouteMethodParamsFactory;
 use gijsbos\ApiServer\Utils\RouteParser;
-use gijsbos\Http\Response;
 use gijsbos\Logging\Classes\LogEnabledClass;
 
 /**
@@ -29,6 +28,12 @@ use gijsbos\Logging\Classes\LogEnabledClass;
 class Server extends LogEnabledClass
 {
     public static string $DEFAULT_CACHE_FOLDER = "./cache/apiserver";
+
+    /**
+     * @var array exceptionHandlers
+     *  Handles custom application exceptions for correct error handling and responses.
+     */
+    public static $exceptionHandlers = [];
 
     private string $requestMethod;
     private string $requestURI;
@@ -65,6 +70,17 @@ class Server extends LogEnabledClass
 
         $this->setLogOutput("file");
     }
+
+    /**
+     * addExceptionHandler
+     */
+    public static function addExceptionHandler(string $exceptionClassName, callable $handler) : void
+    {
+        self::$exceptionHandlers[] = [
+            "className" => $exceptionClassName,
+            "function" => $handler,
+        ];
+    } 
 
     /**
      * extractRequestURI
@@ -436,6 +452,27 @@ class Server extends LogEnabledClass
     }
 
     /**
+     * applyExceptionHandlers
+     */
+    private function applyExceptionHandlers($exception) : false | object
+    {
+        $exceptionClassName = get_class($exception);
+
+        foreach(self::$exceptionHandlers as $handler)
+        {
+            $className = $handler["className"];
+            $function = $handler["function"];
+
+            if($exceptionClassName == $className)
+            {
+                return $function($exception);
+            }
+        }
+
+        return false;
+    }
+
+    /**
      * listen
      */
     public function listen(bool $printReturnValue = true)
@@ -479,6 +516,21 @@ class Server extends LogEnabledClass
         }
         catch(RuntimeException | Exception | TypeError | Throwable $ex)
         {
+            $customException = $this->applyExceptionHandlers($ex);
+
+            // Custom exception provided from exception handlers
+            if($customException !== false)
+            {
+                if($customException instanceof HTTPRequestException)
+                {
+                    $customException->sendJson();
+                }
+                else
+                {
+                    $ex = $customException;
+                }
+            }
+
             try
             {
                 log_error($ex->getMessage());
