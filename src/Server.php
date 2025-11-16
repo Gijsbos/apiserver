@@ -30,8 +30,14 @@ class Server extends LogEnabledClass
     public static string $DEFAULT_CACHE_FOLDER = "./cache/apiserver";
 
     /**
+     * @var array responseHandler
+     *  Allows for custom response handling
+     */
+    public static $responseHandler = null;
+
+    /**
      * @var array exceptionHandlers
-     *  Handles custom application exceptions for correct error handling and responses.
+     *  Allows for custom exception handling
      */
     public static $exceptionHandlers = [];
 
@@ -72,6 +78,14 @@ class Server extends LogEnabledClass
     }
 
     /**
+     * setResponseHandler
+     */
+    public static function setResponseHandler(callable $handler) : void
+    {
+        self::$responseHandler = $handler;
+    }
+
+    /**
      * addExceptionHandler
      */
     public static function addExceptionHandler(string $exceptionClassName, callable $handler) : void
@@ -80,7 +94,7 @@ class Server extends LogEnabledClass
             "className" => $exceptionClassName,
             "function" => $handler,
         ];
-    } 
+    }
 
     /**
      * extractRequestURI
@@ -209,6 +223,10 @@ class Server extends LogEnabledClass
 
         // Fetch Route
         $route = RouteParser::getRoute($methodName, $className);
+
+        // Route not found
+        if($route === false)
+            return false;
 
         // Set properties
         $route->setClassName($className);
@@ -428,9 +446,18 @@ class Server extends LogEnabledClass
     }
 
     /**
+     * executeResponseHandler
+     */
+    private function executeResponseHandler(array $responseData)
+    {
+        if(@Server::$responseHandler !== null && is_callable($method = @Server::$responseHandler))
+            $method($responseData, $this); 
+    }
+
+    /**
      * getReturnContentType
      */
-    private function printReturnValue(array $result)
+    private function printReturnValue(array $responseData)
     {
         $contentType = RequestHeader::getHeader("content-type");
 
@@ -439,14 +466,14 @@ class Server extends LogEnabledClass
             case "application/xml":
                 Header('Content-Type: application/xml; charset=utf-8');
                 http_response_code($this->getRoute()?->getStatusCode() ?? 200);
-                echo (new ArrayToXmlParser())->arrayToXml($result)->asXML();
+                echo (new ArrayToXmlParser())->arrayToXml($responseData)->asXML();
             exit();
 
             case "application/json":
             default:
                 Header('Content-Type: application/json; charset=utf-8');
                 http_response_code($this->getRoute()?->getStatusCode() ?? 200);
-                echo json_encode($result);
+                echo json_encode($responseData);
             exit();
         }
     }
@@ -490,25 +517,28 @@ class Server extends LogEnabledClass
                 throw new ResourceNotFoundException("routeNotFound", "Resource could not be found");
 
             // Execute route
-            $response = $this->executeRoute($this->route);
+            $responseData = $this->executeRoute($this->route);
 
             // Record request time
             $this->requestEndTime = microtime(true);
 
             // Include request time; if response is list, then keys are added to data e.g. {"0": <response>, "requestTime": 0.00764..} will be created
             if($this->addServerTime)
-                $response["serverTime"] = $this->getServerTime();
+                $responseData["serverTime"] = $this->getServerTime();
 
             if($this->addRequestTime)
-                $response["requestTime"] = $this->getRequestTime();
+                $responseData["requestTime"] = $this->getRequestTime();
+
+            // Execute executeResponseHandler
+            $this->executeResponseHandler($responseData);
 
             // Print result
             if($printReturnValue)
-                $this->printReturnValue($response);
+                $this->printReturnValue($responseData);
 
             // Return result
             else
-                return $response;
+                return $responseData;
         }
         catch(HTTPRequestException $ex)
         {

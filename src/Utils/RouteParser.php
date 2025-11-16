@@ -6,33 +6,18 @@ namespace gijsbos\ApiServer\Utils;
 use InvalidArgumentException;
 use ReflectionClass;
 use ReflectionMethod;
-use gijsbos\ApiServer\Classes\DeleteRoute;
-use gijsbos\ApiServer\Classes\GetRoute;
-use gijsbos\ApiServer\Classes\OptionsRoute;
-use gijsbos\ApiServer\Classes\PostRoute;
-use gijsbos\ApiServer\Classes\PutRoute;
 use gijsbos\ApiServer\Classes\Route;
 use gijsbos\ApiServer\Interfaces\RouteInterface;
 use gijsbos\ApiServer\RouteController;
 use gijsbos\ApiServer\Server;
 use gijsbos\CLIParser\CLIParser\Command;
 use gijsbos\Logging\Classes\LogEnabledClass;
-use LogicException;
 
 /**
  * RouteParser
  */
 class RouteParser extends LogEnabledClass
 {
-    const ROUTE_CLASSES = [
-        Route::class,
-        GetRoute::class,
-        PostRoute::class,
-        PutRoute::class,
-        DeleteRoute::class,
-        OptionsRoute::class
-    ];
-
     private array $cacheFiles;
 
     /**
@@ -101,17 +86,16 @@ class RouteParser extends LogEnabledClass
                 $method = new ReflectionMethod($className, $method);
         }
 
-        foreach(self::ROUTE_CLASSES as $className)
-        {
-            if(count($method->getAttributes($className)) > 0)
-            {
-                $routes = $method->getAttributes($className);
-                $route = reset($routes);
-                return $route->newInstance();
-            }
-        }
+        $routeAttributes = self::getReflectionMethodAttributeOfClass($method, Route::class);
+        $routeInheritedAttributes = self::getReflectionMethodAttributeOfSubclass($method, Route::class);
+        $routeAttributes = array_merge($routeAttributes, $routeInheritedAttributes);
 
-        return false;
+        if(count($routeAttributes) == 0)
+            return false;
+        else if(count($routeAttributes) > 1)
+            throw new InvalidArgumentException("Multiple Route attributes set, only one permitted");
+
+        return reset($routeAttributes)->newInstance();
     }
 
     /**
