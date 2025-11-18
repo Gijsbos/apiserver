@@ -387,7 +387,7 @@ class Route implements RouteInterface
             $dataType = $details[1];
             $variableName = $details[2];
 
-            $resourceURL = str_replace($match, "(.+?(?=\/))", $resourceURL);
+            $resourceURL = str_replace($match, "(.+?(?=\/|$))", $resourceURL);
 
             $pathVariableNames[] = $variableName;
 
