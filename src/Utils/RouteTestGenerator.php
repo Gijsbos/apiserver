@@ -542,7 +542,7 @@ EOD;
 
         (new self())
         ->setVerbose($command instanceof Command ? $command->hasFlag("v") : null)
-        ->setVerbose($command instanceof Command ? $command->hasFlag("d") : null)
+        ->setDebug($command instanceof Command ? $command->hasFlag("d") : null)
         ->generateTests($outputFolder);
     }
 }

@@ -203,7 +203,7 @@ class RouteParser extends LogEnabledClass
     {
         (new RouteParser($command?->getOption("cache-folder") ?? Server::$DEFAULT_CACHE_FOLDER))
         ->setVerbose($command instanceof Command ? $command->hasFlag("v") : null)
-        ->setVerbose($command instanceof Command ? $command->hasFlag("d") : null)
+        ->setDebug($command instanceof Command ? $command->hasFlag("d") : null)
         ->parseControllerFiles();
     }
 }
