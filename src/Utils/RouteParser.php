@@ -202,8 +202,8 @@ class RouteParser extends LogEnabledClass
     public static function run(null|Command $command = null)
     {
         (new RouteParser($command?->getOption("cache-folder") ?? Server::$DEFAULT_CACHE_FOLDER))
-        ->setVerbose($command instanceof Command ? $command->hasFlag("v") : null)
-        ->setDebug($command instanceof Command ? $command->hasFlag("d") : null)
+        ->setVerbose($command instanceof Command ? ($command->hasFlag("v") ? true : null) : null)
+        ->setDebug($command instanceof Command ? ($command->hasFlag("d") ? true : null) : null)
         ->parseControllerFiles();
     }
 }

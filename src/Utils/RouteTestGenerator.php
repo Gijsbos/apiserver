@@ -541,8 +541,8 @@ EOD;
             exit("usage: api create tests <outputFolder>");
 
         (new self())
-        ->setVerbose($command instanceof Command ? $command->hasFlag("v") : null)
-        ->setDebug($command instanceof Command ? $command->hasFlag("d") : null)
+        ->setVerbose($command instanceof Command ? ($command->hasFlag("v") ? true : null) : null)
+        ->setDebug($command instanceof Command ? ($command->hasFlag("d") ? true : null) : null)
         ->generateTests($outputFolder);
     }
 }
