@@ -18,6 +18,7 @@ class RouteParam implements RouteParamInterface
     public null|Route $route = null;
     public mixed $value = null;
     public null|string $type = null;
+    public null|string $customType = null;
     public mixed $min = null;
     public mixed $max = null;
     public null|array|string $pattern = null;
@@ -30,6 +31,8 @@ class RouteParam implements RouteParamInterface
     {
         $this->min = @$opts["min"];
         $this->max = @$opts["max"];
+        $this->type = @$opts["type"];
+        $this->customType = @$opts["customType"];
         $this->pattern = @$opts["pattern"];
         $this->values = @$opts["values"];
         $this->required = @$opts["required"] ?? true;
@@ -90,8 +93,9 @@ class RouteParam implements RouteParamInterface
     {
         $object->name = $name;
         $object->route = $route;
-        $object->value = $value;
+        $object->customType = $object->customType ?? $object->type; // 'type' can be used as shorthand for 'customType' but will be overwritten by the real type below
         $object->type = $type;
+        $object->value = $value;
         return $object;
     }
 

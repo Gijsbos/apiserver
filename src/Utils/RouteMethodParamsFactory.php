@@ -3,17 +3,18 @@ declare(strict_types=1);
 
 namespace gijsbos\ApiServer\Utils;
 
-use gijsbos\ApiServer\Classes\OptRequestParam;
+use Exception;
 use ReflectionNamedType;
 use ReflectionUnionType;
 use RuntimeException;
 use ReflectionParameter;
+use gijsbos\ApiServer\Classes\OptRequestParam;
 use gijsbos\ApiServer\Classes\PathVariable;
 use gijsbos\ApiServer\Classes\RequestHeader;
 use gijsbos\ApiServer\Classes\RequestParam;
 use gijsbos\ApiServer\Classes\Route;
 use gijsbos\ApiServer\Classes\RouteParam;
-use gijsbos\Http\Exceptions\BadRequestException;
+use InvalidArgumentException;
 
 /**
  * RouteMethodParamsFactory
@@ -81,31 +82,32 @@ class RouteMethodParamsFactory
     /**
      * createRouteParam
      */
-    private function createRouteParam(ReflectionParameter $parameter, string $routeParamClass, string $name, Route $route, null|string $primitiveType = null)
+    private function createRouteParam(ReflectionParameter $parameter, string $routeParamClass, Route $route, null|string $primitiveType = null)
     {
+        $paramName = $parameter->getName();
+
         $defaultValue =  $parameter->isDefaultValueAvailable() ? $parameter->getDefaultValue() : null; // An object has been provided as default parameter, we use it as base because it might contain options
 
         switch($routeParamClass)
         {
             case PathVariable::class:
-
                 if($defaultValue instanceof PathVariable)
-                    return $routeParamClass::createWithoutConstructorFromObject($defaultValue, $name, $route, $route->getPathVariables($name), $primitiveType);
+                    return $routeParamClass::createWithoutConstructorFromObject($defaultValue, $paramName, $route, $route->getPathVariables($paramName), $primitiveType);
                 else
-                    return $routeParamClass::createWithoutConstructor($name, $route, $route->getPathVariables($name), $primitiveType);
+                    return $routeParamClass::createWithoutConstructor($paramName, $route, $route->getPathVariables($paramName), $primitiveType);
 
             case RequestParam::class:
             case OptRequestParam::class:
                 if($defaultValue instanceof RequestParam || $defaultValue instanceof OptRequestParam)
-                    return $routeParamClass::createWithoutConstructorFromObject($defaultValue, $name, $route, RequestParam::extractValueFromGlobals($route->getServer()->getRequestMethod(), $name, $primitiveType), $primitiveType);
+                    return $routeParamClass::createWithoutConstructorFromObject($defaultValue, $paramName, $route, RequestParam::extractValueFromGlobals($route->getServer()->getRequestMethod(), $paramName, $primitiveType), $primitiveType);
                 else
-                    return $routeParamClass::createWithoutConstructor($name, $route, RequestParam::extractValueFromGlobals($route->getServer()->getRequestMethod(), $name, $primitiveType), $primitiveType);
+                    return $routeParamClass::createWithoutConstructor($paramName, $route, RequestParam::extractValueFromGlobals($route->getServer()->getRequestMethod(), $paramName, $primitiveType), $primitiveType);
 
             case RequestHeader::class:
                 if($defaultValue instanceof RequestHeader)
-                    return $routeParamClass::createWithoutConstructorFromObject($defaultValue, $name, $route, RequestHeader::getHeader($name), $primitiveType);
+                    return $routeParamClass::createWithoutConstructorFromObject($defaultValue, $paramName, $route, RequestHeader::getHeader($paramName), $primitiveType);
                 else
-                    return $routeParamClass::createWithoutConstructor($name, $route, RequestHeader::getHeader($name), $primitiveType);
+                    return $routeParamClass::createWithoutConstructor($paramName, $route, RequestHeader::getHeader($paramName), $primitiveType);
 
             default:
                 throw new RuntimeException("Route Param '$routeParamClass' unknown");
@@ -130,7 +132,7 @@ class RouteMethodParamsFactory
             if($routeParamClassName !== null)
             {
                 // Create instance with value
-                $routeParam = $this->createRouteParam($parameter, $routeParamClassName, $paramName, $route, $primitiveType);
+                $routeParam = $this->createRouteParam($parameter, $routeParamClassName, $route, $primitiveType);
 
                 // Set default value
                 if($routeParam->value == null)
@@ -149,15 +151,30 @@ class RouteMethodParamsFactory
                 // Primitive type set
                 if($routeParam->value !== null && $primitiveType !== null)
                 {
-                    $params[$paramName] = match($primitiveType)
+                    $customType = $routeParam->customType; // Can be set by 'type' property too
+
+                    if(is_string($customType))
                     {
-                        "string" => strval($routeParam->value),
-                        "int" => intval($routeParam->value),
-                        "float" => floatval($routeParam->value),
-                        "double" => doubleval($routeParam->value),
-                        "bool" => boolval($routeParam->value),
-                        "mixed" => $routeParam->value,
-                    };
+                        $params[$paramName] = match($customType)
+                        {
+                            "xml" => simplexml_load_string(strval($routeParam->value)),
+                            "json" => json_decode(strval($routeParam->value), true),
+                            "base64" => base64_decode(strval($routeParam->value)),
+                            default => throw new InvalidArgumentException("Custom type '$customType' invalid"),
+                        };
+                    }
+                    else
+                    {
+                        $params[$paramName] = match($primitiveType)
+                        {
+                            "string" => strval($routeParam->value),
+                            "int" => intval($routeParam->value),
+                            "float" => floatval($routeParam->value),
+                            "double" => doubleval($routeParam->value),
+                            "bool" => boolval($routeParam->value),
+                            "mixed" => $routeParam->value,
+                        };
+                    }
                 }
 
                 // Only RouteParam
