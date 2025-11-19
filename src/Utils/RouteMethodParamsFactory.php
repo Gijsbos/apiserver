@@ -157,9 +157,9 @@ class RouteMethodParamsFactory
                     {
                         $params[$paramName] = match($customType)
                         {
-                            "xml" => simplexml_load_string(strval($routeParam->value)),
-                            "json" => json_decode(strval($routeParam->value), true),
-                            "base64" => base64_decode(strval($routeParam->value)),
+                            "xml" => is_string($routeParam->value) ? simplexml_load_string($routeParam->value) : $routeParam->value,
+                            "json" => is_string($routeParam->value) ? json_decode($routeParam->value, true) : $routeParam->value,
+                            "base64" => is_string($routeParam->value) ? base64_decode($routeParam->value) : $routeParam->value,
                             default => throw new InvalidArgumentException("Custom type '$customType' invalid"),
                         };
                     }
