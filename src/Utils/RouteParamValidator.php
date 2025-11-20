@@ -157,7 +157,7 @@ abstract class RouteParamValidator
                 break;
 
             case "bool":
-                if($p->value !== "0" && $p->value !== "1")
+                if($p->value !== false && $p->value !== true && $p->value !== "0" && $p->value !== "1")
                     throw new BadRequestException($p->name."Invalid", "Parameter '{$p->name}' must be of type '$type'", ["details" => ["received" => $p->value, "expected" => "$type"]]);
                 break;
 
