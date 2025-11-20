@@ -3,7 +3,6 @@ declare(strict_types=1);
 
 namespace gijsbos\ApiServer\Utils;
 
-use Exception;
 use ReflectionNamedType;
 use ReflectionUnionType;
 use RuntimeException;
@@ -14,7 +13,7 @@ use gijsbos\ApiServer\Classes\RequestHeader;
 use gijsbos\ApiServer\Classes\RequestParam;
 use gijsbos\ApiServer\Classes\Route;
 use gijsbos\ApiServer\Classes\RouteParam;
-use InvalidArgumentException;
+use gijsbos\Http\Exceptions\BadRequestException;
 
 /**
  * RouteMethodParamsFactory
@@ -148,24 +147,16 @@ class RouteMethodParamsFactory
                 // Add param to route
                 $route->addRouteParam($routeParam);
 
-                // Primitive type set
-                if($routeParam->value !== null && $primitiveType !== null)
-                {
-                    $customType = $routeParam->customType; // Can be set by 'type' property too
+                // Check custom types, can be set by both 'type' and 'customType' in RouteParam constructor
+                $customType = $routeParam->customType;
 
-                    if(is_string($customType))
+                // Primitive type set
+                if($routeParam->value !== null && ($primitiveType !== null || $customType !== null))
+                {
+                    // First parse primary types
+                    if($primitiveType !== null)
                     {
-                        $params[$paramName] = match($customType)
-                        {
-                            "xml" => is_string($routeParam->value) ? simplexml_load_string($routeParam->value) : $routeParam->value,
-                            "json" => is_string($routeParam->value) ? json_decode($routeParam->value, true) : $routeParam->value,
-                            "base64" => is_string($routeParam->value) ? base64_decode($routeParam->value) : $routeParam->value,
-                            default => throw new InvalidArgumentException("Custom type '$customType' invalid"),
-                        };
-                    }
-                    else
-                    {
-                        $params[$paramName] = match($primitiveType)
+                        $routeParam->value = match($primitiveType)
                         {
                             "string" => strval($routeParam->value),
                             "int" => intval($routeParam->value),
@@ -173,8 +164,51 @@ class RouteMethodParamsFactory
                             "double" => doubleval($routeParam->value),
                             "bool" => boolval($routeParam->value),
                             "mixed" => $routeParam->value,
+                            default => $routeParam->value
                         };
                     }
+
+                    // Then custom types
+                    if(is_string($customType))
+                    {
+                        switch($customType)
+                        {
+                            case "xml":
+                                libxml_use_internal_errors(true);
+
+                                if(!is_string($routeParam->value))
+                                    throw new BadRequestException("xmlInputInvalid", "Parameter '$paramName' expects valid xml");
+
+                                $xml = simplexml_load_string($routeParam->value);
+
+                                if($xml === false)
+                                    throw new BadRequestException("xmlInputInvalid", "Parameter '$paramName' expects valid xml");
+
+                                $routeParam->value = $xml;
+                            break;
+
+                            case "json":
+                                if(!is_string($routeParam->value) || !is_json($routeParam->value))
+                                    throw new BadRequestException("jsonInputInvalid", "Parameter '$paramName' expects valid json");
+
+                                $routeParam->value = json_decode($routeParam->value, true);
+                            break;
+
+                            case "base64":
+                                if(!is_string($routeParam->value))
+                                    throw new BadRequestException("base64InputInvalid", "Parameter '$paramName' expects valid base64");
+
+                                $decoded = simplexml_load_string($routeParam->value);
+
+                                if($decoded === false)
+                                    throw new BadRequestException("base64InputInvalid", "Parameter '$paramName' expects valid base64");
+
+                                $routeParam->value = base64_decode($routeParam->value);
+                            break;
+                        }
+                    }
+                    
+                    $params[$paramName] = $routeParam->value;
                 }
 
                 // Only RouteParam
