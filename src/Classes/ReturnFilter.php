@@ -44,10 +44,11 @@ class ReturnFilter extends RouteAttribute
             // Sequential value
             if(is_int($key))
             {
+                
                 // Value is List Item, Keep Filter The Same, Go n+1 deeper
                 if(is_array($value))
                 {
-                    $data[$key] = $this->applyFilter($value, $filter);
+                    $data[$key] = $this->applyFilter($value, $filter);   
                 }
             }
 
@@ -89,7 +90,8 @@ class ReturnFilter extends RouteAttribute
                 }
                 else
                 {
-                    $filterKey = null;
+                    $filterKey = $key; // Key not found in filter, default is REMOVE
+                    $filterBehaviour = "exclude";
                 }
 
                 // Filter is set and represents the actual filter key that can be used to filter out stuff from data
@@ -101,7 +103,6 @@ class ReturnFilter extends RouteAttribute
                         {
                             $data[$key] = $data[$key]; // Retains the WHOLE assoc array, since filterType is 'string'
                         }
-
                         else
                         {
                             unset($data[$key]); // Exclude
@@ -113,9 +114,8 @@ class ReturnFilter extends RouteAttribute
                         {
                             if($filterBehaviour == "include")
                             {
-                                $data[$key] = $this->applyFilter($data[$key], $filter[$filterKey]); // Retains the WHOLE assoc array, since filterType is 'string'
+                                $data[$key] = $this->applyFilter($data[$key], $filter[$filterKey]); // Retains the WHOLE assoc array, since filterType is 'string'   
                             }
-
                             else
                             {
                                 unset($data[$key]); // Exclude
@@ -127,7 +127,6 @@ class ReturnFilter extends RouteAttribute
                             {
                                 $data[$key] = $data[$key]; // Retains the WHOLE assoc array, since filterType is 'string'
                             }
-
                             else
                             {
                                 unset($data[$key]); // Exclude
