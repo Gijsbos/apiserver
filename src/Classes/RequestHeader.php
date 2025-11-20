@@ -19,16 +19,6 @@ class RequestHeader extends RouteParam
     }
 
     /**
-     * normalizeHeaders
-     */
-    private static function normalizeHeaders(array $headers)
-    {
-        return array_map_assoc(function($k, $v) {
-            return [self::normalizeHeader($k), $v];
-        }, $headers);
-    }
-
-    /**
      * getHeader
      */
     public static function getHeader(string $headerName): ?string
@@ -42,15 +32,12 @@ class RequestHeader extends RouteParam
             'CONTENT_MD5',
         ];
 
-        // remove "HTTP_" prefix for these
+        // Remove "HTTP_" prefix for these
         if (in_array($key, array_map(fn($h) => 'HTTP_' . $h, $specialCases))) {
             $key = substr($key, 5); 
         }
 
-        // Normalize remaining headers
-        $serverHeaders = self::normalizeHeaders($_SERVER);
-
         // Return key
-        return @$serverHeaders[$key] ?? (function_exists('getallheaders') ? @\getallheaders()[$key] : null);
+        return @$_SERVER[$key] ?? (function_exists('getallheaders') ? @\getallheaders()[$key] : null);
     }
 }
