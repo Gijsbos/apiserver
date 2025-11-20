@@ -22,17 +22,22 @@ class RequiresAuthorization extends ExecuteBeforeRoute
      *      RewriteCond %{HTTP:Authorization} ^(.*)
      *      RewriteRule .* - [e=HTTP_AUTHORIZATION:%1]
      */
-    public static function extractAuthorizationToken() : string
+    public static function extractAuthorizationToken(bool $throwsWhenMissing = true)
     {
         $authorization = RequestHeader::getHeader('authorization');
 
         if(!is_string($authorization) || strlen($authorization) == 0)
-            throw new UnauthorizedException("tokenRequired", "Token required");
+        {
+            if($throwsWhenMissing)
+                throw new UnauthorizedException("tokenRequired", "Token required");
+
+            return null;
+        }
 
         $authorization = trim($authorization);
 
-        if(!preg_match("/^bearer:?\s+(.+)/i", $authorization, $matches))
-            throw new UnauthorizedException("tokenFormatInvalid", "Token invalid, expects bearer token");
+        if(!preg_match("/^(?:bearer:?\s*)?(.+)", $authorization, $matches))
+            throw new UnauthorizedException("tokenFormatInvalid", "Token format invalid, expects bearer token");
 
         return $matches[1];
     }
