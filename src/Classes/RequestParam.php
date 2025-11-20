@@ -64,7 +64,7 @@ class RequestParam extends RouteParam
             "POST" => filter_input(INPUT_POST, $parameterName),
             "PUT" => self::getRequestParamValue($parameterName),
             "PATCH" => self::getRequestParamValue($parameterName),
-            "DELETE" => self::getRequestParamValue($parameterName),
+            "DELETE" => filter_input(INPUT_GET, $parameterName), // Fetches from query (most conventional)
             default => null,
         };
     }
