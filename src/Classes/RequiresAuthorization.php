@@ -31,7 +31,7 @@ class RequiresAuthorization extends ExecuteBeforeRoute
 
         $authorization = trim($authorization);
 
-        if(!preg_match("/^bearer\s+(.+)/i", $authorization, $matches))
+        if(!preg_match("/^bearer:?\s+(.+)/i", $authorization, $matches))
             throw new UnauthorizedException("tokenFormatInvalid", "Token invalid, expects bearer token");
 
         return $matches[1];
