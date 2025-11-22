@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "974ec222b2c94a9fd4544f707e429314",
+    "content-hash": "43be831b1e1b77a0e7fadfad39b0e3ee",
     "packages": [
         {
             "name": "brick/math",
@@ -135,16 +135,16 @@
         },
         {
             "name": "gijsbos/classparser",
-            "version": "2.1.1",
+            "version": "2.1.2",
             "source": {
                 "type": "git",
                 "url": "https://github.com/Gijsbos/classparser.git",
-                "reference": "528a28a5c842d10b914a01c18f85779f7e5cccab"
+                "reference": "1650a702d72e2ba52391e58678f4b5aec36adee1"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/Gijsbos/classparser/zipball/528a28a5c842d10b914a01c18f85779f7e5cccab",
-                "reference": "528a28a5c842d10b914a01c18f85779f7e5cccab",
+                "url": "https://api.github.com/repos/Gijsbos/classparser/zipball/1650a702d72e2ba52391e58678f4b5aec36adee1",
+                "reference": "1650a702d72e2ba52391e58678f4b5aec36adee1",
                 "shasum": ""
             },
             "require": {
@@ -177,9 +177,9 @@
             ],
             "support": {
                 "issues": "https://github.com/Gijsbos/classparser/issues",
-                "source": "https://github.com/Gijsbos/classparser/tree/2.1.1"
+                "source": "https://github.com/Gijsbos/classparser/tree/2.1.2"
             },
-            "time": "2025-11-22T15:48:12+00:00"
+            "time": "2025-11-22T16:20:55+00:00"
         },
         {
             "name": "gijsbos/extfuncs",
