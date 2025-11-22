@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "e2b990631b044ef044ef9deaf17c0539",
+    "content-hash": "974ec222b2c94a9fd4544f707e429314",
     "packages": [
         {
             "name": "brick/math",
@@ -135,16 +135,16 @@
         },
         {
             "name": "gijsbos/classparser",
-            "version": "2.1.0",
+            "version": "2.1.1",
             "source": {
                 "type": "git",
                 "url": "https://github.com/Gijsbos/classparser.git",
-                "reference": "77d539500e4a48b486d06b9a0d39ee8ffbd09a30"
+                "reference": "528a28a5c842d10b914a01c18f85779f7e5cccab"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/Gijsbos/classparser/zipball/77d539500e4a48b486d06b9a0d39ee8ffbd09a30",
-                "reference": "77d539500e4a48b486d06b9a0d39ee8ffbd09a30",
+                "url": "https://api.github.com/repos/Gijsbos/classparser/zipball/528a28a5c842d10b914a01c18f85779f7e5cccab",
+                "reference": "528a28a5c842d10b914a01c18f85779f7e5cccab",
                 "shasum": ""
             },
             "require": {
@@ -177,9 +177,9 @@
             ],
             "support": {
                 "issues": "https://github.com/Gijsbos/classparser/issues",
-                "source": "https://github.com/Gijsbos/classparser/tree/2.1.0"
+                "source": "https://github.com/Gijsbos/classparser/tree/2.1.1"
             },
-            "time": "2025-11-22T15:02:03+00:00"
+            "time": "2025-11-22T15:48:12+00:00"
         },
         {
             "name": "gijsbos/extfuncs",
@@ -383,16 +383,16 @@
         },
         {
             "name": "gijsbos/stringfuncs",
-            "version": "1.3.6",
+            "version": "1.3.7",
             "source": {
                 "type": "git",
                 "url": "https://github.com/Gijsbos/stringfuncs.git",
-                "reference": "726d774144767c7f379fb18b4129f6e1087c1367"
+                "reference": "f1cbea3e82208db69058268f6a9fbb723438d9c1"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/Gijsbos/stringfuncs/zipball/726d774144767c7f379fb18b4129f6e1087c1367",
-                "reference": "726d774144767c7f379fb18b4129f6e1087c1367",
+                "url": "https://api.github.com/repos/Gijsbos/stringfuncs/zipball/f1cbea3e82208db69058268f6a9fbb723438d9c1",
+                "reference": "f1cbea3e82208db69058268f6a9fbb723438d9c1",
                 "shasum": ""
             },
             "require-dev": {
@@ -423,9 +423,9 @@
             ],
             "support": {
                 "issues": "https://github.com/Gijsbos/stringfuncs/issues",
-                "source": "https://github.com/Gijsbos/stringfuncs/tree/1.3.6"
+                "source": "https://github.com/Gijsbos/stringfuncs/tree/1.3.7"
             },
-            "time": "2025-11-17T11:07:20+00:00"
+            "time": "2025-11-22T15:14:58+00:00"
         },
         {
             "name": "gijsbos/yamlspeed",
