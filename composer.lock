@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "4ff748efb93c0cb41fb9012c52c39653",
+    "content-hash": "212acbb6256d4cecd9e8c05b87b29f39",
     "packages": [
         {
             "name": "brick/math",
@@ -135,20 +135,21 @@
         },
         {
             "name": "gijsbos/classparser",
-            "version": "1.1.4",
+            "version": "2.0.1",
             "source": {
                 "type": "git",
                 "url": "https://github.com/Gijsbos/classparser.git",
-                "reference": "afdd6c2e648c5502477357b6e07269409edb3283"
+                "reference": "917893dba85b6dde6142619659ef7ce7101fd568"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/Gijsbos/classparser/zipball/afdd6c2e648c5502477357b6e07269409edb3283",
-                "reference": "afdd6c2e648c5502477357b6e07269409edb3283",
+                "url": "https://api.github.com/repos/Gijsbos/classparser/zipball/917893dba85b6dde6142619659ef7ce7101fd568",
+                "reference": "917893dba85b6dde6142619659ef7ce7101fd568",
                 "shasum": ""
             },
             "require": {
                 "gijsbos/extfuncs": "^1.1",
+                "gijsbos/logging": "^1.3",
                 "gijsbos/stringfuncs": "^1.3"
             },
             "require-dev": {
@@ -176,22 +177,22 @@
             ],
             "support": {
                 "issues": "https://github.com/Gijsbos/classparser/issues",
-                "source": "https://github.com/Gijsbos/classparser/tree/1.1.4"
+                "source": "https://github.com/Gijsbos/classparser/tree/2.0.1"
             },
-            "time": "2025-11-15T15:26:15+00:00"
+            "time": "2025-11-22T12:21:27+00:00"
         },
         {
             "name": "gijsbos/extfuncs",
-            "version": "1.5.0",
+            "version": "1.6.1",
             "source": {
                 "type": "git",
                 "url": "https://github.com/Gijsbos/extfuncs.git",
-                "reference": "3b1801c255a1b4a80378c23f405d2ec4abbc192b"
+                "reference": "25f9789280d30c465dcf5a661fc4b6e904bf087d"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/Gijsbos/extfuncs/zipball/3b1801c255a1b4a80378c23f405d2ec4abbc192b",
-                "reference": "3b1801c255a1b4a80378c23f405d2ec4abbc192b",
+                "url": "https://api.github.com/repos/Gijsbos/extfuncs/zipball/25f9789280d30c465dcf5a661fc4b6e904bf087d",
+                "reference": "25f9789280d30c465dcf5a661fc4b6e904bf087d",
                 "shasum": ""
             },
             "require": {
@@ -227,9 +228,9 @@
             ],
             "support": {
                 "issues": "https://github.com/Gijsbos/extfuncs/issues",
-                "source": "https://github.com/Gijsbos/extfuncs/tree/1.5.0"
+                "source": "https://github.com/Gijsbos/extfuncs/tree/1.6.1"
             },
-            "time": "2025-11-16T09:47:54+00:00"
+            "time": "2025-11-18T12:53:17+00:00"
         },
         {
             "name": "gijsbos/http",
@@ -283,16 +284,16 @@
         },
         {
             "name": "gijsbos/logging",
-            "version": "1.3.3",
+            "version": "1.3.4",
             "source": {
                 "type": "git",
                 "url": "https://github.com/Gijsbos/logging.git",
-                "reference": "dd4710571c891e961a41a203ae41e5afb05a2bae"
+                "reference": "9e7707386bd53b75636ba57d5586c6a4139408cc"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/Gijsbos/logging/zipball/dd4710571c891e961a41a203ae41e5afb05a2bae",
-                "reference": "dd4710571c891e961a41a203ae41e5afb05a2bae",
+                "url": "https://api.github.com/repos/Gijsbos/logging/zipball/9e7707386bd53b75636ba57d5586c6a4139408cc",
+                "reference": "9e7707386bd53b75636ba57d5586c6a4139408cc",
                 "shasum": ""
             },
             "require": {
@@ -326,9 +327,9 @@
             ],
             "support": {
                 "issues": "https://github.com/Gijsbos/logging/issues",
-                "source": "https://github.com/Gijsbos/logging/tree/1.3.3"
+                "source": "https://github.com/Gijsbos/logging/tree/1.3.4"
             },
-            "time": "2025-11-16T14:08:38+00:00"
+            "time": "2025-11-21T08:03:47+00:00"
         },
         {
             "name": "gijsbos/php-cli-parser",
@@ -382,16 +383,16 @@
         },
         {
             "name": "gijsbos/stringfuncs",
-            "version": "1.3.5",
+            "version": "1.3.6",
             "source": {
                 "type": "git",
                 "url": "https://github.com/Gijsbos/stringfuncs.git",
-                "reference": "08cd174da4529299a5e888331aa96c069f577d00"
+                "reference": "726d774144767c7f379fb18b4129f6e1087c1367"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/Gijsbos/stringfuncs/zipball/08cd174da4529299a5e888331aa96c069f577d00",
-                "reference": "08cd174da4529299a5e888331aa96c069f577d00",
+                "url": "https://api.github.com/repos/Gijsbos/stringfuncs/zipball/726d774144767c7f379fb18b4129f6e1087c1367",
+                "reference": "726d774144767c7f379fb18b4129f6e1087c1367",
                 "shasum": ""
             },
             "require-dev": {
@@ -422,9 +423,9 @@
             ],
             "support": {
                 "issues": "https://github.com/Gijsbos/stringfuncs/issues",
-                "source": "https://github.com/Gijsbos/stringfuncs/tree/1.3.5"
+                "source": "https://github.com/Gijsbos/stringfuncs/tree/1.3.6"
             },
-            "time": "2025-11-14T12:18:12+00:00"
+            "time": "2025-11-17T11:07:20+00:00"
         },
         {
             "name": "gijsbos/yamlspeed",
@@ -2301,16 +2302,16 @@
         },
         {
             "name": "theseer/tokenizer",
-            "version": "1.3.0",
+            "version": "1.3.1",
             "source": {
                 "type": "git",
                 "url": "https://github.com/theseer/tokenizer.git",
-                "reference": "d74205c497bfbca49f34d4bc4c19c17e22db4ebb"
+                "reference": "b7489ce515e168639d17feec34b8847c326b0b3c"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/theseer/tokenizer/zipball/d74205c497bfbca49f34d4bc4c19c17e22db4ebb",
-                "reference": "d74205c497bfbca49f34d4bc4c19c17e22db4ebb",
+                "url": "https://api.github.com/repos/theseer/tokenizer/zipball/b7489ce515e168639d17feec34b8847c326b0b3c",
+                "reference": "b7489ce515e168639d17feec34b8847c326b0b3c",
                 "shasum": ""
             },
             "require": {
@@ -2339,7 +2340,7 @@
             "description": "A small library for converting tokenized PHP source code into XML and potentially other formats",
             "support": {
                 "issues": "https://github.com/theseer/tokenizer/issues",
-                "source": "https://github.com/theseer/tokenizer/tree/1.3.0"
+                "source": "https://github.com/theseer/tokenizer/tree/1.3.1"
             },
             "funding": [
                 {
@@ -2347,7 +2348,7 @@
                     "type": "github"
                 }
             ],
-            "time": "2025-11-13T13:44:09+00:00"
+            "time": "2025-11-17T20:03:58+00:00"
         }
     ],
     "aliases": [],

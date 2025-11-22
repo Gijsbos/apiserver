@@ -33,7 +33,7 @@ class TestControllerRouteTest extends TestCase
         ]);
 
         # Test Result
-        $this->assertTrue($response->isSuccessful(), !$response->isSuccessful() ? ($response?->getParameter("errorDescription") ?? $response?->getParameter("response")) : "");
+        $this->assertTrue($response->isSuccessful(), $response->getErrorString());
     }
 
     public function testPostTest() : void
@@ -53,7 +53,7 @@ class TestControllerRouteTest extends TestCase
         ]);
 
         # Test Result
-        $this->assertTrue($response->isSuccessful(), !$response->isSuccessful() ? ($response?->getParameter("errorDescription") ?? $response?->getParameter("response")) : "");
+        $this->assertTrue($response->isSuccessful(), $response->getErrorString());
     }
 
     public function testPutTest() : void
@@ -73,7 +73,7 @@ class TestControllerRouteTest extends TestCase
         ]);
 
         # Test Result
-        $this->assertTrue($response->isSuccessful(), !$response->isSuccessful() ? ($response?->getParameter("errorDescription") ?? $response?->getParameter("response")) : "");
+        $this->assertTrue($response->isSuccessful(), $response->getErrorString());
     }
 
     public function testDeleteTest() : void
@@ -93,7 +93,7 @@ class TestControllerRouteTest extends TestCase
         ]);
 
         # Test Result
-        $this->assertTrue($response->isSuccessful(), !$response->isSuccessful() ? ($response?->getParameter("errorDescription") ?? $response?->getParameter("response")) : "");
+        $this->assertTrue($response->isSuccessful(), $response->getErrorString());
     }
 
     public function testRequiresAuthorization() : void
@@ -110,7 +110,6 @@ class TestControllerRouteTest extends TestCase
         ]);
 
         # Test Result
-        $this->assertTrue($response->isSuccessful(), !$response->isSuccessful() ? ($response?->getParameter("errorDescription") ?? $response?->getParameter("response")) : "");
+        $this->assertFalse($response->isSuccessful(), $response->getErrorString());
     }
-
 }

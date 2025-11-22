@@ -18,10 +18,12 @@ use gijsbos\ApiServer\Classes\Route;
 use gijsbos\ApiServer\Classes\RouteAttribute;
 use gijsbos\ApiServer\RouteController;
 use gijsbos\ClassParser\Classes\ClassComponent;
+use gijsbos\ClassParser\Classes\ClassMethod;
 use gijsbos\ClassParser\Classes\ClassObject;
 use gijsbos\ClassParser\ClassParser;
 use gijsbos\CLIParser\CLIParser\Command;
 use gijsbos\Logging\Classes\LogEnabledClass;
+use LogicException;
 
 /**
  * RouteTestGenerator
@@ -64,19 +66,25 @@ class RouteTestGenerator extends LogEnabledClass
         $filePath = "$outputFolder/$testControllerName.php";
 
         // Return existing file
-        if($exists = is_file($filePath))
+        if(is_file($filePath))
+        {
+            include_once $filePath;
+
+            if($fileAlreadyExists === null)
+                $fileAlreadyExists = true;
+
+            $classObjectList = ClassParser::parse($filePath);
+
+            if(count($classObjectList) == 0)
+                throw new LogicException("No class defined in file '$filePath'");
+
+            return reset($classObjectList);
+        }
+        else
         {
             if($fileAlreadyExists === null)
-                $fileAlreadyExists = $exists;
-
-            return ClassParser::parse($filePath);
+                $fileAlreadyExists = false;
         }
-        
-        // Create class and add methods
-        $classComponent = new ClassComponent(ClassComponent::NEW_CLASS, $testControllerName, null, "/**\n * $testControllerName\n */");
-        $classComponent->curlyBracketOnNewline = true;
-        $classComponent->extends = "TestCase";
-        $classContent = $classComponent->toString();
 
         // Create file
         $namespace = $reflection->getNamespaceName();
@@ -84,17 +92,22 @@ class RouteTestGenerator extends LogEnabledClass
         // Create content
         $namespaceContent = is_string($namespace) && strlen($namespace) > 0 ? "\n\nnamespace $namespace;" : "";
 
-        // Return content
-        $fileContent =  <<< PHP
-                        <?php
-                        declare(strict_types=1);$namespaceContent
+        // Create classObject
+        $fileContent = <<<PHP
+<?php
+declare(strict_types=1);$namespaceContent
 
-                        use PHPUnit\Framework\TestCase;
-                        use gijsbos\ApiServer\Utils\RouteParser;
-                        use gijsbos\Http\Http\HTTPRequest;
+use PHPUnit\Framework\TestCase;
+use gijsbos\ApiServer\Utils\RouteParser;
+use gijsbos\Http\Http\HTTPRequest;
 
-                        $classContent
-                        PHP;
+/**
+ * $testControllerName
+ */
+class $testControllerName extends TestCase
+{
+}
+PHP;
 
         // Create directory
         if(!is_dir(dirname($filePath)))
@@ -112,16 +125,29 @@ class RouteTestGenerator extends LogEnabledClass
      */
     private function createSetupBeforeClassMethod(ClassObject &$classObject) : void
     {
-        // Create component
-        $setupBeforeClass = new ClassComponent(ClassComponent::NEW_METHOD, "setupBeforeClass");
-        $setupBeforeClass->isPublic = true;
-        $setupBeforeClass->isStatic = true;
-        $setupBeforeClass->curlyBracketOnNewline = true;
-        $setupBeforeClass->trailingLineBreaks = 2;
-        $setupBeforeClass->returnType = "void";
+        // Get methodName
+        $methodName = "setupBeforeClass";
 
-        // Add
-        $classObject->component->methods[$setupBeforeClass->name] = $setupBeforeClass;
+        // Create definition
+        $definition = <<<PHP
+
+    /**
+     * $methodName
+     */
+    public static function $methodName() : void
+    {
+
+    }
+PHP;
+
+        // Insert before the first method OR behind the last property
+        $definitionIndex = 0;
+
+        // Add Class Property to properties otherwise the definitionIndex keeps adding properties in reverse (it counts the actual properties which might not be set)
+        $classObject->methods[] = $methodName;
+
+        // Add definition
+        $classObject->addDefinition($definition, $definitionIndex);
     }
 
     /**
@@ -129,27 +155,31 @@ class RouteTestGenerator extends LogEnabledClass
      */
     private function createSetUpMethod(ClassObject &$classObject) : void
     {
-        $setup = new ClassComponent(ClassComponent::NEW_METHOD, "setUp");
-        $setup->isProtected = true;
-        $setup->curlyBracketOnNewline = true;
-        $setup->trailingLineBreaks = 2;
-        $setup->returnType = "void";
+        // Get methodName
+        $methodName = "setUp";
 
-        // Add
-        $classObject->component->methods[$setup->name] = $setup;
-    }
+        // Create definition
+        $definition = <<<PHP
+
 
     /**
-     * createUnitTestMethod
+     * $methodName
      */
-    private function createUnitTestMethod(string $testFunctionName) : ClassComponent
+    protected function $methodName() : void
     {
-        $classComponent = new ClassComponent(ClassComponent::NEW_METHOD, $testFunctionName, null);
-        $classComponent->isPublic = true;
-        $classComponent->curlyBracketOnNewline = true;
-        $classComponent->trailingLineBreaks = 2;
-        $classComponent->returnType = "void";
-        return $classComponent;
+
+    }
+
+PHP;
+
+        // Insert before the first method OR behind the last property
+        $definitionIndex = 1;
+
+        // Add Class Property to properties otherwise the definitionIndex keeps adding properties in reverse (it counts the actual properties which might not be set)
+        $classObject->methods[] = $methodName;
+
+        // Add definition
+        $classObject->addDefinition($definition, $definitionIndex);
     }
 
     /**
@@ -441,7 +471,7 @@ PHP;
         $testFunctionName = "test" . ucfirst($method->getName());
 
         // Create method
-        if($classObject->hasMethod($testFunctionName))
+        if($classObject->hasMethod($testFunctionName) || $classObject->hasClassMethod($testFunctionName) || $classObject->containsDefinitionWith($testFunctionName))
         {
             log_debug("Skipping, test method '$testFunctionName' already exists");
             return true;
@@ -457,20 +487,30 @@ PHP;
         if($returnFilter !== false)
             $returnFilter = $returnFilter->newInstance();
 
-        // Create component
-        $testMethod = $this->createUnitTestMethod($testFunctionName);
-
-        // Create content
+        // Create request
         $httpRequestContent = $this->createHTTPRequest($method, $route);
 
-        // Add body
-        $testMethod->body = <<< EOD
-$httpRequestContent\n
-        # Test Result\n        \$this->assertTrue(\$response->isSuccessful(), \$response->getErrorString());
-EOD;
+        // Create definition
+        $definition = <<<PHP
 
-        // Add
-        $classObject->component->methods[$testMethod->name] = $testMethod;
+    /**
+     * $testFunctionName
+     */
+    protected function $testFunctionName()
+    {
+$httpRequestContent
+
+        # Test Result
+        \$this->assertTrue(\$response->isSuccessful(), \$response->getErrorString());
+    }
+
+PHP;
+
+        // Add Class Property to properties otherwise the definitionIndex keeps adding properties in reverse (it counts the actual properties which might not be set)
+        $classObject->methods[] = $testFunctionName;
+
+        // Add definition
+        $classObject->addDefinition($definition);
     }
 
     /**
@@ -509,13 +549,13 @@ EOD;
 
                 // Parsing
                 log_info("Reading method: " . $method->getName());
-                
+
                 // SetupBeforeClass $fileAlreadyExists makes sure the method is only created on file creation, not afterwards
-                if(!$fileAlreadyExists && !$classObject->hasMethod('setupBeforeClass'))
+                if(!$fileAlreadyExists && !$classObject->hasClassMethod('setupBeforeClass') && !$classObject->containsDefinitionWith('setupBeforeClass'))
                     $this->createSetupBeforeClassMethod($classObject);
 
                 // Add SetUp
-                if(!$fileAlreadyExists && !$classObject->hasMethod('setUp'))
+                if(!$fileAlreadyExists && !$classObject->hasClassMethod('setUp') && !$classObject->containsDefinitionWith('setUp'))
                     $this->createSetUpMethod($classObject);
 
                 // Create test method (checks if added inside function)
