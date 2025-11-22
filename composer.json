@@ -30,6 +30,6 @@
         "gijsbos/http": "^1.2",
         "gijsbos/logging": "^1.2",
         "gijsbos/extfuncs": "^1.5",
-        "gijsbos/classparser": "2.0.1"
+        "gijsbos/classparser": "2.0.02"
     }
 }
