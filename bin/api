@@ -6,6 +6,17 @@ if(($index = array_search("--autoload", $argv)) && ($autoloadFile = @$argv[$inde
 {
     include_once $autoloadFile;
 }
+
+# Env var
+else if(is_string($autoload = getenv("CLI_AUTOLOAD")))
+{
+    if(!is_file($autoload))
+        throw new LogicException("Autoload file '$autoload' from env APP_AUTOLOAD is not a file");
+
+    require_once $autoload;
+}
+
+# Default
 else
 {
     # Look for custom overload file
