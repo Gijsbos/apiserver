@@ -43,11 +43,12 @@ class RouteController extends LogEnabledClass
         throw new Error("Method not allowed");
     }
 
-    public function getLocalRoute()
+    public function getLocalRoute(null|string $methodName = null, null|string $className = null)
     {
         $trace = debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS, 2)[1];
-        $class = @$trace["class"];
-        $function = @$trace["function"];
+
+        $class = $className ?? @$trace["class"];
+        $function = $methodName ?? @$trace["function"];
 
         $attributes = RouteParser::getReflectionMethodAttributeOfSubclass(new ReflectionMethod($class, $function), Route::class);
 
@@ -55,11 +56,11 @@ class RouteController extends LogEnabledClass
             return null;
 
         $route = reset($attributes)->newInstance();
-
+        
         $route->setClassName($class);
         $route->setMethodName($function);
-
         $route->setAttributes(Route::extractRouteAttributes($class, $function));
+        $route->setServer($this->server);
 
         return $route;
     }

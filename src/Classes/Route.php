@@ -8,7 +8,6 @@ use ReflectionMethod;
 use gijsbos\ApiServer\Interfaces\RouteInterface;
 use gijsbos\ApiServer\Interfaces\RouteParamInterface;
 use gijsbos\ApiServer\Server;
-use RuntimeException;
 
 /**
  * Route

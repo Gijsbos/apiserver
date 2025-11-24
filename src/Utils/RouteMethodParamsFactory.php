@@ -174,36 +174,38 @@ class RouteMethodParamsFactory
                         switch($customType)
                         {
                             case "xml":
-                                libxml_use_internal_errors(true);
-
-                                if(!is_string($routeParam->value))
+                                // null is allowed as default value
+                                if(!is_null($routeParam->value) && !is_string($routeParam->value))
                                     throw new BadRequestException("xmlInputInvalid", "Parameter '$paramName' expects valid xml");
+                                
+                                if(is_string($routeParam->value))
+                                {
+                                    libxml_use_internal_errors(true);
 
-                                $xml = simplexml_load_string($routeParam->value);
+                                    $xml = simplexml_load_string($routeParam->value);
 
-                                if($xml === false)
-                                    throw new BadRequestException("xmlInputInvalid", "Parameter '$paramName' expects valid xml");
+                                    if($xml === false)
+                                        throw new BadRequestException("xmlInputInvalid", "Parameter '$paramName' expects valid xml");
 
-                                $routeParam->value = $xml;
+                                    $routeParam->value = $xml;
+                                }
+                                
                             break;
 
                             case "json":
-                                if(!is_string($routeParam->value) || !is_json($routeParam->value))
+                                // null and array are allowed as default values
+                                if(!is_null($routeParam->value) && !is_array($routeParam->value) && (!is_string($routeParam->value) || !is_json($routeParam->value)))
                                     throw new BadRequestException("jsonInputInvalid", "Parameter '$paramName' expects valid json");
 
-                                $routeParam->value = json_decode($routeParam->value, true);
+                                $routeParam->value = is_string($routeParam->value) ? json_decode($routeParam->value, true) : $routeParam->value;
                             break;
 
                             case "base64":
-                                if(!is_string($routeParam->value))
+                                // null is allowed as default value
+                                if(!is_null($routeParam->value) && !is_string($routeParam->value))
                                     throw new BadRequestException("base64InputInvalid", "Parameter '$paramName' expects valid base64");
 
-                                $decoded = simplexml_load_string($routeParam->value);
-
-                                if($decoded === false)
-                                    throw new BadRequestException("base64InputInvalid", "Parameter '$paramName' expects valid base64");
-
-                                $routeParam->value = base64_decode($routeParam->value);
+                                $routeParam->value = is_string($routeParam->value) ? base64_decode($routeParam->value) : $routeParam->value;
                             break;
                         }
                     }
