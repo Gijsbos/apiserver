@@ -60,11 +60,11 @@ class RequestParam extends RouteParam
     {
         return match($requestMethod)
         {
-            "GET" => filter_input(INPUT_GET, $parameterName),
+            "GET" => is_string($getValue = filter_input(INPUT_GET, $parameterName)) ? urldecode($getValue) : $getValue,
             "POST" => filter_input(INPUT_POST, $parameterName),
             "PUT" => self::getRequestParamValue($parameterName),
             "PATCH" => self::getRequestParamValue($parameterName),
-            "DELETE" => filter_input(INPUT_GET, $parameterName), // Fetches from query (most conventional)
+            "DELETE" => is_string($deleteValue = filter_input(INPUT_GET, $parameterName)) ? urldecode($deleteValue) : $deleteValue, // Fetches from query (most conventional rather than payload)
             default => null,
         };
     }
