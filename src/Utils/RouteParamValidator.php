@@ -125,7 +125,7 @@ abstract class RouteParamValidator
      */
     public static function validate(RouteParam $p)
     {
-        if($p->value == null || $p->value == "")
+        if($p->value === null || $p->value == "")
         {
             if($p->isRequired())
                 throw new BadRequestException($p->name."InputInvalid", "Parameter '{$p->name}' is required");
@@ -157,7 +157,7 @@ abstract class RouteParamValidator
                 break;
 
             case "bool":
-                if($p->value !== false && $p->value !== true && $p->value !== "0" && $p->value !== "1")
+                if($p->value !== false && $p->value !== true && $p->value !== 0 && $p->value !== 1 && $p->value !== "0" && $p->value !== "1")
                     throw new BadRequestException($p->name."Invalid", "Parameter '{$p->name}' must be of type '$type'", ["details" => ["received" => $p->value, "expected" => "$type"]]);
                 break;
 

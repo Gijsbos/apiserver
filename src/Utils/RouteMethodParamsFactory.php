@@ -98,9 +98,9 @@ class RouteMethodParamsFactory
             case RequestParam::class:
             case OptRequestParam::class:
                 if($defaultValue instanceof RequestParam || $defaultValue instanceof OptRequestParam)
-                    return $routeParamClass::createWithoutConstructorFromObject($defaultValue, $paramName, $route, RequestParam::extractValueFromGlobals($route->getServer()->getRequestMethod(), $paramName, $primitiveType), $primitiveType);
+                    return $routeParamClass::createWithoutConstructorFromObject($defaultValue, $paramName, $route, RequestParam::extractValueFromGlobals($route->getServer()->getRequestMethod(), $paramName), $primitiveType);
                 else
-                    return $routeParamClass::createWithoutConstructor($paramName, $route, RequestParam::extractValueFromGlobals($route->getServer()->getRequestMethod(), $paramName, $primitiveType), $primitiveType);
+                    return $routeParamClass::createWithoutConstructor($paramName, $route, RequestParam::extractValueFromGlobals($route->getServer()->getRequestMethod(), $paramName), $primitiveType);
 
             case RequestHeader::class:
                 if($defaultValue instanceof RequestHeader)
@@ -134,11 +134,11 @@ class RouteMethodParamsFactory
                 $routeParam = $this->createRouteParam($parameter, $routeParamClassName, $route, $primitiveType);
 
                 // Set default value
-                if($routeParam->value == null)
+                if($routeParam->value === null)
                     $routeParam->value = $routeParam->default;
 
                 // Check if value can be null
-                if(!$canBeNull && $routeParam->value == null)
+                if(!$canBeNull && $routeParam->value === null)
                     $routeParam->value = "";
 
                 // Validate param
