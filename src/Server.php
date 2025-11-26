@@ -27,7 +27,7 @@ use gijsbos\Logging\Classes\LogEnabledClass;
  */
 class Server extends LogEnabledClass
 {
-    public static string $DEFAULT_CACHE_FOLDER = "./cache/apiserver";
+    public static string $DEFAULT_ROUTES_FILE = "cache/apiserver/routes.php";
 
     /**
      * @var array responseHandler
@@ -52,7 +52,7 @@ class Server extends LogEnabledClass
     private bool $addServerTime;
     private bool $addRequestTime;
     private string $dateTimeFormat;
-    private string $cacheFolder;
+    private string $routesFile;
 
     /**
      * __construct
@@ -72,7 +72,7 @@ class Server extends LogEnabledClass
         $this->addServerTime = array_key_exists("addServerTime", $opts) ? boolval($opts["addServerTime"]) : false;
         $this->addRequestTime = array_key_exists("addRequestTime", $opts) ? boolval($opts["addRequestTime"]) : false;
         $this->dateTimeFormat = @$opts["dateTimeFormat"] ?? "ISO8601";
-        $this->cacheFolder = @$opts["cacheFolder"] ?? self::$DEFAULT_CACHE_FOLDER;
+        $this->routesFile = @$opts["routesFile"] ?? self::$DEFAULT_ROUTES_FILE;
 
         $this->setLogOutput("file");
     }
@@ -101,7 +101,7 @@ class Server extends LogEnabledClass
      */
     private function extractRequestURI()
     {
-        $requestURI = str_must_start_with(strlen($this->pathPrefix) > 0 ? str_must_not_start_with($_SERVER["REQUEST_URI"], $this->pathPrefix) : $_SERVER["REQUEST_URI"], "/");
+        $requestURI = str_must_not_start_with(strlen($this->pathPrefix) > 0 ? str_must_not_start_with($_SERVER["REQUEST_URI"], $this->pathPrefix) : $_SERVER["REQUEST_URI"], "/");
 
         $parts = parse_url($requestURI);
 
@@ -130,14 +130,6 @@ class Server extends LogEnabledClass
     public function getRequestURI()
     {
         return $this->requestURI;
-    }
-
-    /**
-     * getRequestURIIndex
-     */
-    public function getRequestURIIndex()
-    {
-        return substr_count($this->getRequestURI(), "/");
     }
 
     /**
@@ -209,7 +201,7 @@ class Server extends LogEnabledClass
     /**
      * parseRoute
      */
-    private function parseRoute(string $classMethod, array $pathPatternMatches = [])
+    private function parseRoute(string $classMethod, array $pathVariables)
     {
         [$className, $methodName] = explode("::", $classMethod);
 
@@ -237,16 +229,7 @@ class Server extends LogEnabledClass
         $route->setAttributes(Route::extractRouteAttributes($className, $methodName));
 
         // Init path variables
-        $pathVariableNames = $route->getPathVariableNames();
-        if(count($pathVariableNames))
-        {
-            $pathVariables = [];
-            foreach($pathVariableNames as $i => $name)
-            {
-                $pathVariables[$name] = $pathPatternMatches[$i+1];
-            }
-            $route->setPathVariables($pathVariables);
-        }
+        $route->setPathVariables($pathVariables);
 
         // Set server ref
         $route->setServer($this);
@@ -256,46 +239,12 @@ class Server extends LogEnabledClass
     }
 
     /**
-     * matchRoutePattern
-     */
-    private function matchRoutePattern(string $cacheFile) : false | RouteInterface
-    {
-        $handle = fopen($cacheFile, 'r');
-
-        $requestURI = $this->getRequestURI();
-
-        if (!$handle) {
-            throw new RuntimeException("Cannot open file: $cacheFile");
-        }
-
-        try
-        {
-            while (($line = fgets($handle)) !== false)
-            {
-                $routeData = explode(" ", trim($line));
-
-                if (count($routeData) < 2) continue;
-
-                if (preg_match($routeData[0], $requestURI, $pathPatternMatches))
-                {
-                    return $this->parseRoute($routeData[1], $pathPatternMatches); // found!
-                }
-            }
-            return false;
-        }
-        finally
-        {
-            fclose($handle);
-        }
-    }
-
-    /**
      * createRouteCache
      *  Only fires when there is no cache folder
      */
     private function createRouteCache()
     {
-        (new RouteParser($this->cacheFolder))
+        (new RouteParser($this->routesFile))
         ->parseControllerFiles();
     }
 
@@ -304,22 +253,58 @@ class Server extends LogEnabledClass
      */
     private function matchRoute()
     {
-        $method = $this->getRequestMethod();
-        $index = $this->getRequestURIIndex();
-
-        // Route cache folder not found
-        if(!is_dir($this->cacheFolder))
+        // Create routes if they don't exist
+        if(!is_file($this->routesFile))
             $this->createRouteCache();
 
-        // Find route index file
-        $routeCacheFile = $this->cacheFolder."/$method/$index";
+        // Include the routes into memory
+        $routes = require_once $this->routesFile;
 
-        // Not found
-        if(!is_file($routeCacheFile))
-            return false;
+        // Get method
+        $requestMethod = $this->getRequestMethod();
 
-        // Find round
-        return $this->matchRoutePattern($routeCacheFile);
+        // Route method does not exist
+        if(!array_key_exists($requestMethod, $routes))
+            throw new ResourceNotFoundException("routeNotFound", "Route does not exist");
+
+        // All requestMethod routes
+        $routes = $routes[$requestMethod];
+
+        // Resolve path and store vars along the way
+        $pathVariables = [];
+        $uri = $this->getRequestURI();
+        $fragments = explode("/", $uri);
+
+        while(count($fragments) > 0)
+        {
+            $fragment = array_shift($fragments);
+
+            if(array_key_exists($fragment, $routes))
+            {
+                $routes = $routes[$fragment];
+            }
+            else
+            {
+                foreach($routes as $key => $value)
+                {
+                    if(is_string($key) && str_starts_ends_with($key, "{", "}"))
+                    {
+                        $pathVariables[unwrap($key, "{", "}")] = $fragment;
+                        $routes = $routes[$key];
+                        break;
+                    }
+                }
+            }
+        }
+
+        if(count($routes) == 1) // Found!
+        {
+            return $this->parseRoute(reset($routes), $pathVariables);
+        }
+        else
+        {
+            throw new ResourceNotFoundException("routeNotFound", "Route does not exist");
+        }
     }
 
     /**

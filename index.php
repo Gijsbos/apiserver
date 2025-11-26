@@ -10,8 +10,8 @@ try
         "requireHttps" => false,        // Must use HTTPS or receive error, defaults to false
         "pathPrefix" => "apiserver/",             // Used for subpaths e.g. localhost/mysubpath/
         "escapeResult" => true,         // Escaped special characters, defaults to true
-        "addServerTime" => false,       // Adds code execution time
-        "addRequestTime" => false,      // Adds total server response time
+        "addServerTime" => true,       // Adds code execution time
+        "addRequestTime" => true,      // Adds total server response time
     ]);
 
     $server->listen();

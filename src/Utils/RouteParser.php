@@ -7,7 +7,6 @@ use InvalidArgumentException;
 use ReflectionClass;
 use ReflectionMethod;
 use gijsbos\ApiServer\Classes\Route;
-use gijsbos\ApiServer\Interfaces\RouteInterface;
 use gijsbos\ApiServer\RouteController;
 use gijsbos\ApiServer\Server;
 use gijsbos\CLIParser\CLIParser\Command;
@@ -18,24 +17,12 @@ use gijsbos\Logging\Classes\LogEnabledClass;
  */
 class RouteParser extends LogEnabledClass
 {
-    private array $cacheFiles;
-
     /**
      * __construct
      */
-    public function __construct(private string $cacheFolder)
+    public function __construct(private string $routesFile, array $opts = [])
     {
-        parent::__construct();
-
-        $this->cacheFiles = [];
-    }
-
-    /**
-     * getCacheFolder
-     */
-    public function getCacheFolder() : string
-    {
-        return $this->cacheFolder;
+        parent::__construct($opts);
     }
 
     /**
@@ -99,38 +86,48 @@ class RouteParser extends LogEnabledClass
     }
 
     /**
-     * addToCache
+     * buildTrix
      */
-    private function addToCache(string $className, string $methodName, RouteInterface $route)
+    private function buildTrix(Route $route, array &$prefixTree, string $classMethod)
     {
-        $method = $route->getRequestMethod();
-        $path = str_must_start_with($route->getPath(), "/");
-        $pathPattern = $route->getPathPattern();
-        $index = substr_count($path, "/");
-        $cacheFolder = $this->cacheFolder;
+        $path = $route->getPath();
+        $requestMethod = $route->getRequestMethod();
 
-        if(!is_dir($cacheFolder))
-            mkdir($cacheFolder, 0777, true);
+        if(!array_key_exists($requestMethod, $prefixTree))
+            $prefixTree[$requestMethod] = [];
 
-        if(!is_dir($cacheFolder."/$method"))
-            mkdir($cacheFolder."/$method");
+        $keys = explode("/", $path);
 
-        $cacheFileName = $cacheFolder."/$method/$index";
+        $current = &$prefixTree[$requestMethod];
 
-        if(!in_array($cacheFileName, $this->cacheFiles))
+        while(count($keys) > 0)
         {
-            file_put_contents($cacheFileName, ""); // Clear file
+            $key = array_shift($keys);
 
-            $this->cacheFiles[] = $cacheFileName;
+            if(!array_key_exists($key, $current))
+            {
+                if(count($keys) == 0)
+                {
+                    $current[$key] = [$classMethod];
+                }
+                else
+                {
+                    $current[$key] = [];
+                }
+
+                $current = &$current[$key];
+            }
+            else
+            {
+                $current = &$current[$key];
+            }
         }
-
-        file_put_contents($cacheFileName, "$pathPattern $className::$methodName\n", FILE_APPEND);
-    }
+    }   
 
     /**
      * parseMethods
      */
-    private function parseMethods(string $className, array $methods)
+    private function parseMethods(string $className, array $methods, array &$prefixTree)
     {
         log_debug("Parsing \"$className\", found \"".count($methods)."\" controller methods");
 
@@ -149,9 +146,43 @@ class RouteParser extends LogEnabledClass
             }
 
             log_info("Add method (".$route->getRequestMethod().") \"$methodName\" in \"$className\" with path: " . $route->getPath());
-
-            $this->addToCache($className, $methodName, $route);
+            $this->buildTrix($route, $prefixTree, "$className::$methodName");
         }
+    }
+
+    /**
+     * createPHPArray
+     */
+    private function createPHPArray(array $prefixTree, int $level = 1)
+    {
+        $base = str_repeat("    ", $level - 1);
+        $indents = str_repeat("    ", $level);
+        $array = "[\n";
+        foreach($prefixTree as $key => $value)
+        {
+            $key = is_numeric($key) ? $key : "\"$key\"";
+
+            if(is_array($value))
+            {
+                
+                $array .= "$indents$key => " . $this->createPHPArray($value, $level + 1) . ",\n";
+            }
+            else
+            {
+                $array .= "$indents$key => \"$value\",\n";
+            }
+        }
+        return "$array$base]";
+    }
+
+    /**
+     * createTrie
+     */
+    private function createTrie(array $prefixTree)
+    {
+        $phpArray = $this->createPHPArray($prefixTree);
+
+        return "<?php\n\nreturn $phpArray;";
     }
 
     /**
@@ -159,6 +190,8 @@ class RouteParser extends LogEnabledClass
      */
     public function parseControllerFiles()
     {
+        $prefixTree = [];
+
         $classes = $this->getControllerClasses();
 
         log_info("Found \"".count($classes)."\" controller(s)");
@@ -169,8 +202,15 @@ class RouteParser extends LogEnabledClass
 
             $methods = array_filter($reflection->getMethods(), fn($r) => $r->isPublic());
             
-            $this->parseMethods($className, $methods);
+            $this->parseMethods($className, $methods, $prefixTree);
         }
+
+        $trie = $this->createTrie($prefixTree);
+
+        if(!is_dir($targetDir = dirname($this->routesFile)))
+            mkdir($targetDir, 0777, true);
+
+        file_put_contents($this->routesFile, $trie);
     }
 
     /**
@@ -201,7 +241,7 @@ class RouteParser extends LogEnabledClass
      */
     public static function run(null|Command $command = null)
     {
-        (new RouteParser($command?->getOption("cache-folder") ?? Server::$DEFAULT_CACHE_FOLDER))
+        (new RouteParser($command?->getOption("routes-file") ?? Server::$DEFAULT_ROUTES_FILE))
         ->setVerbose($command instanceof Command ? ($command->hasFlag("v") ? true : null) : null)
         ->setDebug($command instanceof Command ? ($command->hasFlag("d") ? true : null) : null)
         ->parseControllerFiles();

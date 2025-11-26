@@ -33,7 +33,7 @@ class Route implements RouteInterface
      */
     public function __construct(private string $requestMethod, string $path, int $statusCode = 200, array $opts = [])
     {
-        $this->path = str_must_start_with($path, "/");
+        $this->path = str_must_not_start_with($path, "/");
         $this->statusCode = $statusCode;
         $this->pathPattern = "";
         $this->pathVariableNames = null;
@@ -61,7 +61,7 @@ class Route implements RouteInterface
      */
     public function getRequestMethod() : string
     {
-        return $this->requestMethod;
+        return strtoupper($this->requestMethod);
     }
 
     /**
@@ -88,7 +88,7 @@ class Route implements RouteInterface
 
         return $path;
     }
-
+    
     /**
      * getFullPath
      */
