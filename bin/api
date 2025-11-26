@@ -1,0 +1,102 @@
+#!/usr/bin/env php
+<?php
+
+# Use autoloader through option: --autoload <filePath>
+if(($index = array_search("--autoload", $argv)) && ($autoloadFile = @$argv[$index+1]) !== null)
+{
+    include_once $autoloadFile;
+}
+
+# Env var
+else if(is_string($autoload = getenv("CLI_AUTOLOAD")))
+{
+    if(!is_file($autoload))
+        throw new LogicException("Autoload file '$autoload' from env APP_AUTOLOAD is not a file");
+
+    require_once $autoload;
+}
+
+# Default
+else
+{
+    # Look for custom overload file
+    if(is_file("src/autoload.php"))
+        include_once "./src/autoload.php";
+
+    # Fallback to vendor autoload
+    else
+        include_once "./vendor/autoload.php";
+}
+
+use gijsbos\CLIParser\CLIParser\CommandLineParser;
+use gijsbos\ApiServer\Utils\RouteParser;
+use gijsbos\ApiServer\Utils\RouteTestGenerator;
+
+/**
+ * APICLI
+ */
+final class APICLI
+{
+    const VERSION = "1.0.0";
+
+    public function printDocs()
+    {
+
+    }
+
+    public function process($argv)
+    {
+        $command = CommandLineParser::parseArgv($argv, 1);
+
+        if($command->isEmpty())
+        {
+            self::printDocs();
+        }
+        else
+        {
+            if(!$command->hasArgs() && ($command->hasFlag("v") || $command->hasOption("--version")))
+            {
+                printf("\nVersion: %s\n", self::VERSION);
+            }
+            else
+            {
+                $arg = $command->getNextArg();
+
+                switch($arg)
+                {
+                    case "cache":
+                        switch($command->getNextArg())
+                        {
+                            case "routes":
+                                RouteParser::run($command);
+                            break;
+                        }
+                    break;
+
+                    case "create":
+                        switch($command->getNextArg())
+                        {
+                            case "tests":
+                                RouteTestGenerator::run($command);
+                            break;
+                        }
+                    break;
+
+                    default:
+                        self::printDocs();
+                }
+            }
+        }
+        echo("\n");
+    }
+}
+
+try
+{
+    (new APICLI())->process($argv);
+}
+catch(\Exception $ex)
+{
+    echo($ex->getMessage()."\n");
+    echo($ex->getTraceAsString()."\n");
+}
