@@ -297,9 +297,11 @@ class Server extends LogEnabledClass
             }
         }
 
-        if(count($routes) == 1) // Found!
+        if(array_key_exists(0, $routes)) // Found!
         {
-            return $this->parseRoute(reset($routes), $pathVariables);
+            $route = $routes[0];
+
+            return $this->parseRoute($route, $pathVariables);
         }
         else
         {

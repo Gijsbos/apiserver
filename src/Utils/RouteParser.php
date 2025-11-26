@@ -108,7 +108,7 @@ class RouteParser extends LogEnabledClass
             {
                 if(count($keys) == 0)
                 {
-                    $current[$key] = [$classMethod];
+                    $current[$key][] = $classMethod;
                 }
                 else
                 {
@@ -119,7 +119,14 @@ class RouteParser extends LogEnabledClass
             }
             else
             {
-                $current = &$current[$key];
+                if(count($keys) == 0)
+                {
+                    $current[$key][] = $classMethod;
+                }
+                else
+                {
+                    $current = &$current[$key];
+                }
             }
         }
     }   
@@ -164,7 +171,6 @@ class RouteParser extends LogEnabledClass
 
             if(is_array($value))
             {
-                
                 $array .= "$indents$key => " . $this->createPHPArray($value, $level + 1) . ",\n";
             }
             else
