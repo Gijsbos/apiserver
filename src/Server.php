@@ -354,18 +354,21 @@ class Server extends LogEnabledClass
         if(is_object($data))
             return $this->convertObject($data);
 
-        foreach($data as $key => &$value)
+        if(is_array($data))
         {
-            // Convert object
-            if(is_object($value))
-                $value = $this->convertObject($value);
+            foreach($data as $key => &$value)
+            {
+                // Convert object
+                if(is_object($value))
+                    $value = $this->convertObject($value);
 
-            // Repeat for every array
-            if(is_array($value) || is_object($value))
-                $value = $this->toArray($value);
+                // Repeat for every array
+                if(is_array($value) || is_object($value))
+                    $value = $this->toArray($value);
+            }
         }
 
-        return $data;
+        return $data ?? [];
     }
 
     /**
@@ -428,7 +431,7 @@ class Server extends LogEnabledClass
         // Escape result for safety
         $returnData = $this->applyEscapeResult($returnData);
 
-        // Apply return filter if applicable
+        // Return data or empty array
         return $returnData;
     }
 
