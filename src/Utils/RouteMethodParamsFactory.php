@@ -91,25 +91,83 @@ class RouteMethodParamsFactory
         {
             case PathVariable::class:
                 if($defaultValue instanceof PathVariable)
-                    return $routeParamClass::createWithoutConstructorFromObject($defaultValue, $paramName, $route, $route->getPathVariables($paramName), $primitiveType);
+                {
+                    $customType = $defaultValue?->customType ?? $defaultValue->type;
+
+                    return $routeParamClass::createWithoutConstructorFromObject($defaultValue, $paramName, $route, $route->getPathVariables($paramName), $primitiveType, $customType);
+                }
                 else
                     return $routeParamClass::createWithoutConstructor($paramName, $route, $route->getPathVariables($paramName), $primitiveType);
 
             case RequestParam::class:
             case OptRequestParam::class:
                 if($defaultValue instanceof RequestParam || $defaultValue instanceof OptRequestParam)
-                    return $routeParamClass::createWithoutConstructorFromObject($defaultValue, $paramName, $route, RequestParam::extractValueFromGlobals($route->getServer()->getRequestMethod(), $paramName), $primitiveType);
+                {
+                    $customType = $defaultValue?->customType ?? $defaultValue->type;
+
+                    return $routeParamClass::createWithoutConstructorFromObject($defaultValue, $paramName, $route, RequestParam::extractValueFromGlobals($route->getServer()->getRequestMethod(), $paramName, $customType), $primitiveType, $customType);
+                }
                 else
                     return $routeParamClass::createWithoutConstructor($paramName, $route, RequestParam::extractValueFromGlobals($route->getServer()->getRequestMethod(), $paramName), $primitiveType);
 
             case RequestHeader::class:
                 if($defaultValue instanceof RequestHeader)
-                    return $routeParamClass::createWithoutConstructorFromObject($defaultValue, $paramName, $route, RequestHeader::getHeader($paramName), $primitiveType);
+                {
+                    $customType = $defaultValue?->customType ?? $defaultValue->type;
+
+                    return $routeParamClass::createWithoutConstructorFromObject($defaultValue, $paramName, $route, RequestHeader::getHeader($paramName), $primitiveType, $customType);
+                }
                 else
                     return $routeParamClass::createWithoutConstructor($paramName, $route, RequestHeader::getHeader($paramName), $primitiveType);
 
             default:
                 throw new RuntimeException("Route Param '$routeParamClass' unknown");
+        }
+    }
+
+    /**
+     * parseCustomTypeValues
+     */
+    private function parseCustomTypeValues(RouteParam $routeParam)
+    {
+        $paramName = $routeParam->name;
+
+        switch($routeParam->customType)
+        {
+            case "xml":
+                // null is allowed as default value
+                if(!is_null($routeParam->value) && !is_string($routeParam->value))
+                    throw new BadRequestException("xmlInputInvalid", "Parameter '$paramName' expects valid xml");
+                
+                if(is_string($routeParam->value))
+                {
+                    libxml_use_internal_errors(true);
+
+                    $xml = simplexml_load_string($routeParam->value);
+
+                    if($xml === false)
+                        throw new BadRequestException("xmlInputInvalid", "Parameter '$paramName' expects valid xml");
+
+                    $routeParam->value = $xml;
+                }
+                
+            break;
+
+            case "json":
+                // null and array are allowed as default values
+                if(!is_null($routeParam->value) && !is_array($routeParam->value) && (!is_string($routeParam->value) || !is_json($routeParam->value)))
+                    throw new BadRequestException("jsonInputInvalid", "Parameter '$paramName' expects valid json");
+
+                $routeParam->value = is_string($routeParam->value) ? json_decode($routeParam->value, true) : $routeParam->value;
+            break;
+
+            case "base64":
+                // null is allowed as default value
+                if(!is_null($routeParam->value) && !is_string($routeParam->value))
+                    throw new BadRequestException("base64InputInvalid", "Parameter '$paramName' expects valid base64");
+
+                $routeParam->value = is_string($routeParam->value) ? base64_decode($routeParam->value) : $routeParam->value;
+            break;
         }
     }
 
@@ -153,67 +211,25 @@ class RouteMethodParamsFactory
                 // Primitive type set
                 if($routeParam->value !== null && ($primitiveType !== null || $customType !== null))
                 {
-                    // First parse primary types
-                    if($primitiveType !== null)
+                    $routeParam->value = match($primitiveType)
                     {
-                        $routeParam->value = match($primitiveType)
-                        {
-                            "string" => strval($routeParam->value),
-                            "int" => intval($routeParam->value),
-                            "float" => floatval($routeParam->value),
-                            "double" => doubleval($routeParam->value),
-                            "bool" => boolval($routeParam->value),
-                            "mixed" => $routeParam->value,
-                            default => $routeParam->value
-                        };
-                    }
+                        "string" => strval($routeParam->value),
+                        "int" => intval($routeParam->value),
+                        "float" => floatval($routeParam->value),
+                        "double" => doubleval($routeParam->value),
+                        "bool" => boolval($routeParam->value),
+                        "mixed" => $routeParam->value,
+                        default => $routeParam->value
+                    };
 
-                    // Then custom types
                     if(is_string($customType))
                     {
-                        switch($customType)
-                        {
-                            case "xml":
-                                // null is allowed as default value
-                                if(!is_null($routeParam->value) && !is_string($routeParam->value))
-                                    throw new BadRequestException("xmlInputInvalid", "Parameter '$paramName' expects valid xml");
-                                
-                                if(is_string($routeParam->value))
-                                {
-                                    libxml_use_internal_errors(true);
-
-                                    $xml = simplexml_load_string($routeParam->value);
-
-                                    if($xml === false)
-                                        throw new BadRequestException("xmlInputInvalid", "Parameter '$paramName' expects valid xml");
-
-                                    $routeParam->value = $xml;
-                                }
-                                
-                            break;
-
-                            case "json":
-                                // null and array are allowed as default values
-                                if(!is_null($routeParam->value) && !is_array($routeParam->value) && (!is_string($routeParam->value) || !is_json($routeParam->value)))
-                                    throw new BadRequestException("jsonInputInvalid", "Parameter '$paramName' expects valid json");
-
-                                $routeParam->value = is_string($routeParam->value) ? json_decode($routeParam->value, true) : $routeParam->value;
-                            break;
-
-                            case "base64":
-                                // null is allowed as default value
-                                if(!is_null($routeParam->value) && !is_string($routeParam->value))
-                                    throw new BadRequestException("base64InputInvalid", "Parameter '$paramName' expects valid base64");
-
-                                $routeParam->value = is_string($routeParam->value) ? base64_decode($routeParam->value) : $routeParam->value;
-                            break;
-                        }
+                        $this->parseCustomTypeValues($routeParam);
                     }
                     
                     $params[$paramName] = $routeParam->value;
                 }
 
-                // Only RouteParam
                 else
                 {
                     $params[$paramName] = $routeParam->value; // Set value

@@ -56,82 +56,128 @@ class RequestParam extends RouteParam
     }
 
     /**
-     * getGetValue
+     * getCustomTypeFilter
      */
-    private static function getGetValue(string $parameterName, ?string $contentType = null)
+    private static function getCustomTypeFilter(?string $customType = null)
     {
+        $flags = FILTER_DEFAULT;
+
+        if($customType == null)
+            return $flags;
+
+        if($customType == "email")
+            $flags = FILTER_VALIDATE_EMAIL;
+        else if($customType == "url" || $customType == "uri")
+            $flags = FILTER_VALIDATE_URL;
+        else if($customType == "mac")
+            $flags = FILTER_VALIDATE_MAC;
+        else if($customType == "int")
+            $flags = FILTER_VALIDATE_INT;
+        else if($customType == "float")
+            $flags = FILTER_VALIDATE_FLOAT;
+        else if($customType == "ip")
+            $flags = FILTER_VALIDATE_IP;
+        else if($customType == "bool")
+            $flags = FILTER_VALIDATE_BOOL;
+        else if($customType == "boolean")
+            $flags = FILTER_VALIDATE_BOOLEAN;
+        else if($customType == "domain")
+            $flags = FILTER_VALIDATE_DOMAIN;
+
+        return $flags;
+    }
+
+    /**
+     * getGetValue
+     *  returns false on filter failure
+     */
+    private static function getGetValue(string $parameterName, ?string $contentType = null, ?string $customType = null)
+    {
+        $filter = self::getCustomTypeFilter($customType);
+
         switch($contentType)
         {
             default:
-                return is_string($getValue = filter_input(INPUT_GET, $parameterName)) ? urldecode($getValue) : $getValue;
+                return is_string($getValue = filter_input(INPUT_GET, $parameterName, $filter)) ? urldecode($getValue) : $getValue;
         }
     }
 
     /**
      * getPostValue
      */
-    private static function getPostValue(string $parameterName, ?string $contentType = null)
+    private static function getPostValue(string $parameterName, ?string $contentType = null, ?string $customType = null)
     {
+        $filter = self::getCustomTypeFilter($customType);
+
         switch($contentType)
         {
             case "application/json":
-                return @self::getRequestData($contentType)[$parameterName];
+                $value = @self::getRequestData($contentType)[$parameterName];
+                return $value !== null ? filter_var($value, $filter) : null;
 
             default:
-                return filter_input(INPUT_POST, $parameterName);
+                return filter_input(INPUT_POST, $parameterName, $filter);
         }
     }
 
     /**
      * getPutValue
      */
-    private static function getPutValue(string $parameterName, ?string $contentType = null)
+    private static function getPutValue(string $parameterName, ?string $contentType = null, ?string $customType = null)
     {
+        $filter = self::getCustomTypeFilter($customType);
+
         switch($contentType)
         {
             default:
-                return @self::getRequestData($contentType)[$parameterName];
+                $value = @self::getRequestData($contentType)[$parameterName];
+                return $value !== null ? filter_var($value, $filter) : null;
         }
     }
 
     /**
      * getPatchValue
      */
-    private static function getPatchValue(string $parameterName, ?string $contentType = null)
+    private static function getPatchValue(string $parameterName, ?string $contentType = null, ?string $customType = null)
     {
+        $filter = self::getCustomTypeFilter($customType);
+
         switch($contentType)
         {
             default:
-                return @self::getRequestData($contentType)[$parameterName];
+                $value = @self::getRequestData($contentType)[$parameterName];
+                return $value !== null ? filter_var($value, $filter) : null;
         }
     }
 
     /**
      * getDeleteValue
      */
-    private static function getDeleteValue(string $parameterName, ?string $contentType = null)
+    private static function getDeleteValue(string $parameterName, ?string $contentType = null, ?string $customType = null)
     {
+        $filter = self::getCustomTypeFilter($customType);
+
         switch($contentType)
         {
             default:
-                return is_string($deleteValue = filter_input(INPUT_GET, $parameterName)) ? urldecode($deleteValue) : $deleteValue; // Fetches from query (most conventional rather than payload)
+                return is_string($getValue = filter_input(INPUT_GET, $parameterName, $filter)) ? urldecode($getValue) : $getValue;
         }
     }
 
     /**
      * extractValueFromGlobals
      */
-    public static function extractValueFromGlobals(string $requestMethod, string $parameterName)
+    public static function extractValueFromGlobals(string $requestMethod, string $parameterName, ?string $customType = null)
     {
         $contentType = self::getContentType();
 
         return match($requestMethod)
         {
-            "GET" => self::getGetValue($parameterName, $contentType),
-            "POST" => self::getPostValue($parameterName, $contentType),
-            "PUT" => self::getPutValue($parameterName, $contentType),
-            "PATCH" => self::getPatchValue($parameterName, $contentType),
-            "DELETE" => self::getDeleteValue($parameterName, $contentType),
+            "GET" => self::getGetValue($parameterName, $contentType, $customType),
+            "POST" => self::getPostValue($parameterName, $contentType, $customType),
+            "PUT" => self::getPutValue($parameterName, $contentType, $customType),
+            "PATCH" => self::getPatchValue($parameterName, $contentType, $customType),
+            "DELETE" => self::getDeleteValue($parameterName, $contentType, $customType),
             default => null,
         };
     }

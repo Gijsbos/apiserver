@@ -125,7 +125,12 @@ abstract class RouteParamValidator
      */
     public static function validate(RouteParam $p)
     {
-        if($p->value === null || $p->value == "")
+        if($p->value == false && is_string($p->customType))
+        {
+            throw new BadRequestException($p->name."TypeInvalid", "Parameter '{$p->name}' is not of type '{$p->customType}'");
+        }
+
+        if($p->value === null || $p->value === "")
         {
             if($p->isRequired())
                 throw new BadRequestException($p->name."InputInvalid", "Parameter '{$p->name}' is required");

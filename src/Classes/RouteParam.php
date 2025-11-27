@@ -89,12 +89,12 @@ class RouteParam implements RouteParamInterface
         return $this->value;
     }
 
-    public static function createWithoutConstructorFromObject($object, string $name, Route $route, mixed $value = null, mixed $type = null)
+    public static function createWithoutConstructorFromObject($object, string $name, Route $route, mixed $value = null, mixed $type = null, mixed $customType = null)
     {
         $object->name = $name;
-        $object->route = $route;
-        $object->customType = $object->customType ?? $object->type; // 'type' can be used as shorthand for 'customType' but will be overwritten by the real type below
+        $object->route = $route;        
         $object->type = $type;
+        $object->customType = $customType; // 'type' can be used as shorthand for 'customtype', in here we set the right parameters where they belong
         $object->value = $value;
         return $object;
     }

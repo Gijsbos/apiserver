@@ -17,8 +17,6 @@ use gijsbos\ApiServer\Classes\ReturnFilter;
 use gijsbos\ApiServer\Classes\Route;
 use gijsbos\ApiServer\Classes\RouteAttribute;
 use gijsbos\ApiServer\RouteController;
-use gijsbos\ClassParser\Classes\ClassComponent;
-use gijsbos\ClassParser\Classes\ClassMethod;
 use gijsbos\ClassParser\Classes\ClassObject;
 use gijsbos\ClassParser\ClassParser;
 use gijsbos\CLIParser\CLIParser\Command;
