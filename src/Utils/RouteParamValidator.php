@@ -16,6 +16,38 @@ use gijsbos\Http\Exceptions\BadRequestException;
 abstract class RouteParamValidator
 {
     /**
+     * getCustomTypeFilter
+     */
+    private static function getCustomTypeFilter(?string $customType = null)
+    {
+        $flags = FILTER_DEFAULT;
+
+        if($customType == null)
+            return $flags;
+
+        if($customType == "email")
+            $flags = FILTER_VALIDATE_EMAIL;
+        else if($customType == "url" || $customType == "uri")
+            $flags = FILTER_VALIDATE_URL;
+        else if($customType == "mac")
+            $flags = FILTER_VALIDATE_MAC;
+        else if($customType == "int")
+            $flags = FILTER_VALIDATE_INT;
+        else if($customType == "float")
+            $flags = FILTER_VALIDATE_FLOAT;
+        else if($customType == "ip")
+            $flags = FILTER_VALIDATE_IP;
+        else if($customType == "bool")
+            $flags = FILTER_VALIDATE_BOOL;
+        else if($customType == "boolean")
+            $flags = FILTER_VALIDATE_BOOLEAN;
+        else if($customType == "domain")
+            $flags = FILTER_VALIDATE_DOMAIN;
+
+        return $flags;
+    }
+
+    /**
      * getTypeFromValue
      */
     public static function getTypeFromValue($value)
@@ -125,11 +157,7 @@ abstract class RouteParamValidator
      */
     public static function validate(RouteParam $p)
     {
-        if($p->value == false && is_string($p->customType))
-        {
-            throw new BadRequestException($p->name."TypeInvalid", "Parameter '{$p->name}' is not of type '{$p->customType}'");
-        }
-
+        // Validate empty values
         if($p->value === null || $p->value === "")
         {
             if($p->isRequired())
@@ -138,14 +166,24 @@ abstract class RouteParamValidator
                 return true;
         }
 
+        // Validate custom types
+        else if(is_string($p->customType) && strlen($p->customType) > 0)
+        {
+            $result = filter_var($p->value, self::getCustomTypeFilter($p->customType));
+
+            if($result == false)
+                throw new BadRequestException($p->name."TypeInvalid", "Parameter '{$p->name}' is not of type '{$p->customType}'");
+        }
+
+        // Validate value set
         if(is_array($p->values))
         {
             if(!in_array($p->value, $p->values))
                 throw new BadRequestException($p->name."ValueInvalid", "Parameter '{$p->name}' value does not match " . implode("|", $p->values));
         }
 
+        // Fetch type for type validation
         $type = is_string($p->type) ? $p->type : self::getTypeFromValue($p->value);
-
         switch($type)
         {
             case "int":
@@ -167,7 +205,6 @@ abstract class RouteParamValidator
                 break;
 
             case "string":
-
                 $p->pattern = self::parsePatternInput($p);
 
                 if(!is_string($p->value))

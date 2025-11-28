@@ -92,7 +92,7 @@ class RouteMethodParamsFactory
             case PathVariable::class:
                 if($defaultValue instanceof PathVariable)
                 {
-                    $customType = $defaultValue?->customType ?? $defaultValue->type;
+                    $customType = $defaultValue->customType ?? $defaultValue->type;
 
                     return $routeParamClass::createWithoutConstructorFromObject($defaultValue, $paramName, $route, $route->getPathVariables($paramName), $primitiveType, $customType);
                 }
@@ -103,9 +103,9 @@ class RouteMethodParamsFactory
             case OptRequestParam::class:
                 if($defaultValue instanceof RequestParam || $defaultValue instanceof OptRequestParam)
                 {
-                    $customType = $defaultValue?->customType ?? $defaultValue->type;
+                    $customType = $defaultValue->customType ?? $defaultValue->type;
 
-                    return $routeParamClass::createWithoutConstructorFromObject($defaultValue, $paramName, $route, RequestParam::extractValueFromGlobals($route->getServer()->getRequestMethod(), $paramName, $customType), $primitiveType, $customType);
+                    return $routeParamClass::createWithoutConstructorFromObject($defaultValue, $paramName, $route, RequestParam::extractValueFromGlobals($route->getServer()->getRequestMethod(), $paramName), $primitiveType, $customType);
                 }
                 else
                     return $routeParamClass::createWithoutConstructor($paramName, $route, RequestParam::extractValueFromGlobals($route->getServer()->getRequestMethod(), $paramName), $primitiveType);
@@ -113,7 +113,7 @@ class RouteMethodParamsFactory
             case RequestHeader::class:
                 if($defaultValue instanceof RequestHeader)
                 {
-                    $customType = $defaultValue?->customType ?? $defaultValue->type;
+                    $customType = $defaultValue->customType ?? $defaultValue->type;
 
                     return $routeParamClass::createWithoutConstructorFromObject($defaultValue, $paramName, $route, RequestHeader::getHeader($paramName), $primitiveType, $customType);
                 }
@@ -214,10 +214,10 @@ class RouteMethodParamsFactory
                     $routeParam->value = match($primitiveType)
                     {
                         "string" => strval($routeParam->value),
-                        "int" => intval($routeParam->value),
-                        "float" => floatval($routeParam->value),
-                        "double" => doubleval($routeParam->value),
-                        "bool" => boolval($routeParam->value),
+                        "int" => is_string($routeParam->value) && strlen($routeParam->value) == 0 ? null : intval($routeParam->value),
+                        "float" => is_string($routeParam->value) && strlen($routeParam->value) == 0 ? null : floatval($routeParam->value),
+                        "double" => is_string($routeParam->value) && strlen($routeParam->value) == 0 ? null : doubleval($routeParam->value),
+                        "bool" => is_string($routeParam->value) && strlen($routeParam->value) == 0 ? null : boolval($routeParam->value),
                         "mixed" => $routeParam->value,
                         default => $routeParam->value
                     };
