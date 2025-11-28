@@ -167,7 +167,7 @@ abstract class RouteParamValidator
         }
 
         // Validate custom types
-        else if(is_string($p->customType) && strlen($p->customType) > 0)
+        else if(is_string($p->customType) && strlen($p->customType) > 0 && (is_string($p->value) || is_numeric($p->value)))
         {
             $result = filter_var($p->value, self::getCustomTypeFilter($p->customType));
 
