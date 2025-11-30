@@ -545,17 +545,9 @@ class Server extends LogEnabledClass
         {
             $customException = $this->applyExceptionHandlers($ex);
 
-            // Custom exception provided from exception handlers
             if($customException !== false)
             {
-                if($customException instanceof HTTPRequestException)
-                {
-                    $customException->sendJson();
-                }
-                else
-                {
-                    $ex = $customException;
-                }
+                $ex = $customException;
             }
 
             try
