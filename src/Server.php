@@ -8,6 +8,7 @@ use RuntimeException;
 use Throwable;
 use TypeError;
 use ReflectionClass;
+use UnexpectedValueException;
 
 use gijsbos\Http\Response;
 use gijsbos\ApiServer\Classes\RequestHeader;
@@ -21,6 +22,7 @@ use gijsbos\ApiServer\Utils\ArrayToXmlParser;
 use gijsbos\ApiServer\Utils\RouteMethodParamsFactory;
 use gijsbos\ApiServer\Utils\RouteParser;
 use gijsbos\Logging\Classes\LogEnabledClass;
+
 
 /**
  * Server
@@ -482,7 +484,12 @@ class Server extends LogEnabledClass
 
             if($exceptionClassName == $className)
             {
-                return $function($exception);
+                $result = $function($exception);
+
+                if($result instanceof Exception === false)
+                    throw new UnexpectedValueException("Custom exception handler expects a return value of type Exception, received " . get_type($result));
+
+                return $result;
             }
         }
 
