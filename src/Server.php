@@ -565,14 +565,21 @@ class Server extends LogEnabledClass
                 ]));
                 exit(0);
             }
-            
-            http_response_code(500);
-            print(json_encode([
-                "error" => get_class($ex),
-                "errorDescription" => $ex->getMessage(),
-                "statusCode" => 500,
-            ]));
-            exit(0);
+
+            if($ex instanceof HTTPRequestException)
+            {
+                $ex->sendJson();
+            }
+            else
+            {
+                http_response_code(500);
+                print(json_encode([
+                    "error" => get_class($ex),
+                    "errorDescription" => $ex->getMessage(),
+                    "statusCode" => 500,
+                ]));
+                exit(0);
+            }
         }
     }
 
