@@ -251,6 +251,21 @@ class Server extends LogEnabledClass
     }
 
     /**
+     * getBranchDepth
+     */
+    private function getBranchDepth(array $branch, int $depth = 0)
+    {
+        $keys = array_filter(array_keys($branch), 'is_string');
+
+        if(count($keys))
+        {
+            return $this->getBranchDepth($branch[reset($keys)], $depth + 1);
+        }
+
+        return $depth;
+    }
+
+    /**
      * matchRoute
      */
     private function matchRoute()
@@ -276,6 +291,8 @@ class Server extends LogEnabledClass
         $pathVariables = [];
         $uri = $this->getRequestURI();
         $fragments = explode("/", $uri);
+        $maxDepth = count($fragments) - 1;
+        $depth = 0;
 
         // Traverse the trie per fragment
         while(count($fragments) > 0)
@@ -292,48 +309,15 @@ class Server extends LogEnabledClass
             // Search for placeholder
             else
             {
-                // We do a lookahead of at most 2 to prevent using the wrong path
-                // The reason for 2 is because routes are at least separated by a 'word' and 'slash'
-                $nPlusOneFragment = reset($fragments);
-
-                // Iterate over every option
                 foreach($routes as $key => $value)
                 {
                     if(is_string($key) && str_starts_ends_with($key, "{", "}")) // Found placeholder
                     {
-                        if($nPlusOneFragment !== false)
-                        {
-                            $hasNPlusOneFragment = array_key_exists($nPlusOneFragment, $routes[$key]);
+                        $branchDepth = $this->getBranchDepth($value);
 
-                            if(!$hasNPlusOneFragment) // Lookahead +1 failed, skip this option
-                            {
-                                reset($fragments);
-                                continue;
-                            }
-
-                            $nPlusTwoFragment = next($fragments);
-
-                            if($nPlusTwoFragment !== false)  
-                            {                                
-                                $hasNPlusTwoFragment = array_key_exists($nPlusTwoFragment, $routes[$key][$nextFragment]);
-
-                                if(!$hasNPlusTwoFragment) // Lookahead +2 failed, skip this option
-                                {
-                                    reset($fragments);
-                                    continue;
-                                }
-                            }
-                            else
-                            {
-                                $optionGoesDeeperThanNeeded = is_string(array_key_first($routes[$key][$nextFragment]));
-                                
-                                if($optionGoesDeeperThanNeeded) // No more deeper search needed, skip this option
-                                {
-                                    reset($fragments);
-                                    continue;
-                                }
-                            }
-                        }
+                        // depth + branchDepth cannot exceed uri max depth
+                        if($depth + $branchDepth !== $maxDepth)
+                            continue;
 
                         $routes = $routes[$key];
                         $pathVariables[unwrap($key, "{", "}")] = $fragment;
@@ -341,6 +325,8 @@ class Server extends LogEnabledClass
                     }
                 }
             }
+
+            $depth++;
         }
 
         if(array_key_exists(0, $routes)) // Found!
