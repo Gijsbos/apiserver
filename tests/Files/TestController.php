@@ -158,4 +158,22 @@ class TestController extends RouteController
     {
         return ["result" => "testRoute7"];
     }
+
+    /**
+     * testRoute8A
+     */
+    #[GetRoute('/account/{accountId}/api-request/insights')]
+    public function testRoute8A()
+    {
+        return ["result" => "testRoute8"];
+    }
+
+    /**
+     * testRoute8
+     */
+    #[GetRoute('/account/{accountId}/')]
+    public function testRoute8()
+    {
+        return ["result" => "testRoute8"];
+    }
 }

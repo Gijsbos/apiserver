@@ -256,21 +256,6 @@ class Server extends LogEnabledClass
         ->parseControllerFiles();
     }
 
-    // /**
-    //  * getBranchDepth
-    //  */
-    // private function getBranchDepth(array $branch, int $depth = 0)
-    // {
-    //     $keys = array_filter(array_keys($branch), 'is_string');
-
-    //     if(count($keys))
-    //     {
-    //         return $this->getBranchDepth($branch[reset($keys)], $depth + 1);
-    //     }
-
-    //     return $depth;
-    // }
-
     private function getRoutes()
     {
         if(self::$ROUTE_CACHE !== null)
@@ -308,10 +293,6 @@ class Server extends LogEnabledClass
         $uri = $this->getRequestURI();
         $fragments = explode("/", $uri);
 
-        // Keeping track of trie depth prevents smaller paths to be overruled by larger paths in the trie.
-        $maxDepth = count($fragments);
-        $depth = 0;
-
         // Traverse the trie per fragment
         while(count($fragments) > 0)
         {
@@ -337,8 +318,6 @@ class Server extends LogEnabledClass
                     }
                 }
             }
-
-            $depth++;
         }
 
         if(array_key_exists(0, $routes)) // Found!

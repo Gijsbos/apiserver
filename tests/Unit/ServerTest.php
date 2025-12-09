@@ -95,4 +95,15 @@ final class ServerTest extends TestCase
 
         $this->assertTrue($response["result"] == "testRoute7", implode(", ", $response));
     }
+
+    public function testRoute8()
+    {
+        Server::simulateRequest("GET", "/account/account_2rN3rW4xW0No/");
+
+        $server = new Server();
+
+        $response = $server->listen(false);
+
+        $this->assertTrue($response["result"] == "testRoute8", implode(", ", $response));
+    }
 }
