@@ -339,7 +339,7 @@ class Server extends LogEnabledClass
         if(array_key_exists(0, $routes)) // Found!
         {
             $route = $routes[0];
-            return $this->parseRoute($route, $pathVariables);
+            return $this->parseRoute($route, array_values($pathVariables)); // Reset indices
         }
         else
         {

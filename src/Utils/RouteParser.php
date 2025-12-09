@@ -120,6 +120,7 @@ class RouteParser extends LogEnabledClass
                     $current[$key] = [];
                 }
 
+                $depth += 1;
                 $current = &$current[$key];
             }
             else
@@ -130,6 +131,7 @@ class RouteParser extends LogEnabledClass
                 }
                 else
                 {
+                    $depth += 1;
                     $current = &$current[$key];
                 }
             }
