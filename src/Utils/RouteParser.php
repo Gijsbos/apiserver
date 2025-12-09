@@ -197,14 +197,6 @@ class RouteParser extends LogEnabledClass
     }
 
     /**
-     * verifyTrieStructure
-     */
-    private function verifyTrieStructure(array $prefixTree)
-    {
-
-    }
-
-    /**
      * parseControllerFiles
      */
     public function parseControllerFiles()
@@ -230,8 +222,6 @@ class RouteParser extends LogEnabledClass
             mkdir($targetDir, 0777, true);
 
         file_put_contents($this->routesFile, $trie);
-
-        $this->verifyTrieStructure($prefixTree);
     }
 
     /**
