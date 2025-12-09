@@ -323,7 +323,7 @@ class Server extends LogEnabledClass
                         $branchDepth = $this->getBranchDepth($value) + 1; // Add the extra depth +1 because we look ahead from routes[key], not routes itself.
 
                         // By checking the depth of a branch, we can exclude paths that go past the max depth of the actual request
-                        if($depth + $branchDepth !== $maxDepth)
+                        if($depth + $branchDepth > $maxDepth)
                             continue;
 
                         $routes = $routes[$key];
