@@ -230,6 +230,11 @@ class Server extends LogEnabledClass
         // Add attributes
         $route->setAttributes(Route::extractRouteAttributes($className, $methodName));
 
+        // Parse path variables
+        $pathVariables = array_map_assoc(function($placeholderIndex, $placeholderName) use ($pathVariables) {
+            return [$placeholderName, $pathVariables[$placeholderIndex]];
+        }, explode_enclosed("{", "}", $route->getPath()));
+
         // Init path variables
         $route->setPathVariables($pathVariables);
 
@@ -291,7 +296,9 @@ class Server extends LogEnabledClass
         $pathVariables = [];
         $uri = $this->getRequestURI();
         $fragments = explode("/", $uri);
-        $maxDepth = count($fragments) - 1;
+
+        // Keeping track of trie depth prevents smaller paths to be overruled by larger paths in the trie.
+        $maxDepth = count($fragments);
         $depth = 0;
 
         // Traverse the trie per fragment
@@ -313,9 +320,9 @@ class Server extends LogEnabledClass
                 {
                     if(is_string($key) && str_starts_ends_with($key, "{", "}")) // Found placeholder
                     {
-                        $branchDepth = $this->getBranchDepth($value);
+                        $branchDepth = $this->getBranchDepth($value) + 1; // Add the extra depth +1 because we look ahead from routes[key], not routes itself.
 
-                        // depth + branchDepth cannot exceed uri max depth
+                        // By checking the depth of a branch, we can exclude paths that go past the max depth of the actual request
                         if($depth + $branchDepth !== $maxDepth)
                             continue;
 

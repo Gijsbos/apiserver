@@ -99,10 +99,15 @@ class RouteParser extends LogEnabledClass
         $keys = explode("/", $path);
 
         $current = &$prefixTree[$requestMethod];
+        $depth = 0;
 
         while(count($keys) > 0)
         {
             $key = array_shift($keys);
+
+            $isPlaceholder = str_starts_ends_with($key, "{", "}");
+
+            $key = $isPlaceholder ? "{{$depth}}" : $key;
 
             if(!array_key_exists($key, $current))
             {
@@ -192,6 +197,14 @@ class RouteParser extends LogEnabledClass
     }
 
     /**
+     * verifyTrieStructure
+     */
+    private function verifyTrieStructure(array $prefixTree)
+    {
+
+    }
+
+    /**
      * parseControllerFiles
      */
     public function parseControllerFiles()
@@ -217,6 +230,8 @@ class RouteParser extends LogEnabledClass
             mkdir($targetDir, 0777, true);
 
         file_put_contents($this->routesFile, $trie);
+
+        $this->verifyTrieStructure($prefixTree);
     }
 
     /**
