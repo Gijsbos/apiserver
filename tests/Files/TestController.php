@@ -95,4 +95,67 @@ class TestController extends RouteController
             "token" => $authorization,
         ];
     }
+
+    /**
+     * testRoute1
+     */
+    #[GetRoute('/foo/{a}')]
+    public function testRoute1()
+    {
+        return ["result" => "testRoute1"];
+    }
+
+    /**
+     * testRoute2
+     */
+    #[GetRoute('/foo/{a}/')]
+    public function testRoute2()
+    {
+        return ["result" => "testRoute2"];
+    }
+
+    /**
+     * testRoute3
+     */
+    #[GetRoute('/foo/{a}/bar')]
+    public function testRoute3()
+    {
+        return ["result" => "testRoute3"];
+    }
+
+    /**
+     * testRoute4
+     */
+    #[GetRoute('/foo/{a}/bar/')]
+    public function testRoute4()
+    {
+        return ["result" => "testRoute4"];
+    }
+
+    /**
+     * testRoute5
+     */
+    #[GetRoute('/foo/{a}/bar/{b}/')]
+    public function testRoute5()
+    {
+        return ["result" => "testRoute5"];
+    }
+
+    /**
+     * testRoute6
+     */
+    #[GetRoute('/foo/{a}/baz')]
+    public function testRoute6()
+    {
+        return ["result" => "testRoute6"];
+    }
+
+    /**
+     * testRoute7
+     */
+    #[GetRoute('/foo/hi')]
+    public function testRoute7()
+    {
+        return ["result" => "testRoute7"];
+    }
 }

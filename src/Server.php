@@ -30,6 +30,7 @@ use gijsbos\Logging\Classes\LogEnabledClass;
 class Server extends LogEnabledClass
 {
     public static string $DEFAULT_ROUTES_FILE = "cache/apiserver/routes.php";
+    public static $ROUTE_CACHE = null;
 
     /**
      * @var array responseHandler
@@ -255,32 +256,42 @@ class Server extends LogEnabledClass
         ->parseControllerFiles();
     }
 
-    /**
-     * getBranchDepth
-     */
-    private function getBranchDepth(array $branch, int $depth = 0)
+    // /**
+    //  * getBranchDepth
+    //  */
+    // private function getBranchDepth(array $branch, int $depth = 0)
+    // {
+    //     $keys = array_filter(array_keys($branch), 'is_string');
+
+    //     if(count($keys))
+    //     {
+    //         return $this->getBranchDepth($branch[reset($keys)], $depth + 1);
+    //     }
+
+    //     return $depth;
+    // }
+
+    private function getRoutes()
     {
-        $keys = array_filter(array_keys($branch), 'is_string');
+        if(self::$ROUTE_CACHE !== null)
+            return self::$ROUTE_CACHE;
 
-        if(count($keys))
-        {
-            return $this->getBranchDepth($branch[reset($keys)], $depth + 1);
-        }
+        self::$ROUTE_CACHE = require_once $this->routesFile;
 
-        return $depth;
+        return self::$ROUTE_CACHE;
     }
 
     /**
      * matchRoute
      */
-    private function matchRoute()
+    public function matchRoute()
     {
         // Create routes if they don't exist
         if(!is_file($this->routesFile))
             $this->createRouteCache();
 
         // Include the routes into memory
-        $routes = require_once $this->routesFile;
+        $routes = $this->getRoutes();
 
         // Get method
         $requestMethod = $this->getRequestMethod();
@@ -320,12 +331,6 @@ class Server extends LogEnabledClass
                 {
                     if(is_string($key) && str_starts_ends_with($key, "{", "}")) // Found placeholder
                     {
-                        $branchDepth = $this->getBranchDepth($value) + 1; // Add the extra depth +1 because we look ahead from routes[key], not routes itself.
-
-                        // By checking the depth of a branch, we can exclude paths that go past the max depth of the actual request
-                        if($depth + $branchDepth > $maxDepth)
-                            continue;
-
                         $routes = $routes[$key];
                         $pathVariables[unwrap($key, "{", "}")] = $fragment;
                         break;
