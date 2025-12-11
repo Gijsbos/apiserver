@@ -3,14 +3,15 @@ declare(strict_types=1);
 
 namespace gijsbos\ApiServer\Utils;
 
+use gijsbos\ApiServer\Attributes\Route;
 use InvalidArgumentException;
 use ReflectionClass;
 use ReflectionMethod;
-use gijsbos\ApiServer\Classes\Route;
 use gijsbos\ApiServer\RouteController;
 use gijsbos\ApiServer\Server;
 use gijsbos\CLIParser\CLIParser\Command;
 use gijsbos\Logging\Classes\LogEnabledClass;
+use ReflectionAttribute;
 
 /**
  * RouteParser
@@ -35,21 +36,19 @@ class RouteParser extends LogEnabledClass
     }
 
     /**
-     * getControllerClasses
+     * getRouteControllerClasses
      */
-    private function getControllerClasses()
+    public static function getRouteControllerClasses()
     {
-        $classes = [];
-        foreach(get_declared_classes() as $className) 
-        {
-            $ref = new ReflectionClass($className);
+        return array_map(fn($class) => new ReflectionClass($class), array_values(array_filter(get_declared_classes(), fn($c) => is_subclass_of($c, RouteController::class))));
+    }
 
-            if ($ref->isSubclassOf(RouteController::class))
-            {
-                $classes[] = $ref;
-            }
-        }
-        return $classes;
+    /**
+     * getRouteControllerClassMethods
+     */
+    public static function getRouteControllerClassMethods(ReflectionClass $reflection)
+    {
+        return array_values(array_filter($reflection->getMethods(), fn($m) => $m->isPublic() && $m->getAttributes(Route::class, ReflectionAttribute::IS_INSTANCEOF)));
     }
 
     /**
@@ -205,16 +204,16 @@ class RouteParser extends LogEnabledClass
     {
         $prefixTree = [];
 
-        $classes = $this->getControllerClasses();
+        $classes = self::getRouteControllerClasses();
 
         log_info("Found \"".count($classes)."\" controller(s)");
 
-        foreach($classes as $reflection)
+        foreach($classes as $class)
         {
-            $className = $reflection->getName();
+            $className = $class->getName();
 
-            $methods = array_filter($reflection->getMethods(), fn($r) => $r->isPublic());
-            
+            $methods = self::getRouteControllerClassMethods($class);
+
             $this->parseMethods($className, $methods, $prefixTree);
         }
 

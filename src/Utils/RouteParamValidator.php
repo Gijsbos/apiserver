@@ -73,14 +73,19 @@ abstract class RouteParamValidator
     /**
      * extractPatternAttributeFromProperty
      */
-    public static function extractPatternAttributeFromProperty(string $className, string $propertyName)
+    public static function extractPatternAttributeFromProperty(string $className, string $propertyName, bool $throws = true)
     {
         $property = new ReflectionProperty($className, $propertyName);
 
         $patterns = array_values(array_filter($property->getAttributes(), fn($a) => $a->getName() == RegExp::class || is_subclass_of($a->getName(), RegExp::class)));
 
         if(count($patterns) == 0)
-            throw new LogicException("Property '{$propertyName}' does not define the 'Pattern' attribute in class '$className'");
+        {
+            if($throws)
+                throw new LogicException("Property '{$propertyName}' does not define the 'Pattern' attribute in class '$className'");
+
+            return false;
+        }
 
         $pattern = reset($patterns);
 

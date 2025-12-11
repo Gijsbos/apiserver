@@ -3,7 +3,7 @@ declare(strict_types=1);
 
 namespace gijsbos\ApiServer\Interfaces;
 
-use gijsbos\ApiServer\Classes\Route;
+use gijsbos\ApiServer\Attributes\Route;
 
 interface RouteParamInterface
 {

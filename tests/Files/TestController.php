@@ -1,15 +1,15 @@
 <?php
 declare(strict_types=1);
 
-use gijsbos\ApiServer\Classes\DeleteRoute;
-use gijsbos\ApiServer\Classes\GetRoute;
+use gijsbos\ApiServer\Attributes\DeleteRoute;
+use gijsbos\ApiServer\Attributes\GetRoute;
 use gijsbos\ApiServer\Classes\PathVariable;
-use gijsbos\ApiServer\Classes\PostRoute;
-use gijsbos\ApiServer\Classes\PutRoute;
+use gijsbos\ApiServer\Attributes\PostRoute;
+use gijsbos\ApiServer\Attributes\PutRoute;
 use gijsbos\ApiServer\Classes\RequestHeader;
 use gijsbos\ApiServer\Classes\RequestParam;
-use gijsbos\ApiServer\Classes\RequiresAuthorization;
-use gijsbos\ApiServer\Classes\ReturnFilter;
+use gijsbos\ApiServer\Attributes\RequiresAuthorization;
+use gijsbos\ApiServer\Attributes\ReturnFilter;
 use gijsbos\ApiServer\RouteController;
 
 /**

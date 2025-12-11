@@ -1,7 +1,7 @@
 <?php
 declare(strict_types=1);
 
-namespace gijsbos\ApiServer\Classes;
+namespace gijsbos\ApiServer\Attributes;
 
 use Attribute;
 
@@ -11,23 +11,14 @@ use Attribute;
 #[Attribute(Attribute::TARGET_METHOD)]
 class ExecuteBeforeRoute extends RouteAttribute
 {
-    /**
-     * __construct
-     */
     public function __construct(private mixed $callback)
     { }
 
-    /**
-     * getCallback
-     */
     public function getCallback()
     {
         return $this->callback;
     }
 
-    /**
-     * execute
-     */
     public function execute(Route $route)
     {
         if(is_callable($callback = $this->callback))

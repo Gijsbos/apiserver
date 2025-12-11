@@ -12,8 +12,8 @@ use UnexpectedValueException;
 
 use gijsbos\Http\Response;
 use gijsbos\ApiServer\Classes\RequestHeader;
-use gijsbos\ApiServer\Classes\ReturnFilter;
-use gijsbos\ApiServer\Classes\Route;
+use gijsbos\ApiServer\Attributes\ReturnFilter;
+use gijsbos\ApiServer\Attributes\Route;
 use gijsbos\Http\Exceptions\ForbiddenException;
 use gijsbos\Http\Exceptions\HTTPRequestException;
 use gijsbos\Http\Exceptions\ResourceNotFoundException;

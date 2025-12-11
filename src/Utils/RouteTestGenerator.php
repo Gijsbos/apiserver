@@ -8,20 +8,21 @@ use ReflectionMethod;
 use ReflectionParameter;
 use ReflectionUnionType;
 use InvalidArgumentException;
+use LogicException;
+
+use gijsbos\ApiServer\Attributes\RequiresAuthorization;
+use gijsbos\ApiServer\Attributes\ReturnFilter;
+use gijsbos\ApiServer\Attributes\Route;
+use gijsbos\ApiServer\Attributes\RouteAttribute;
 
 use gijsbos\ApiServer\Classes\OptRequestParam;
 use gijsbos\ApiServer\Classes\RequestHeader;
 use gijsbos\ApiServer\Classes\RequestParam;
-use gijsbos\ApiServer\Classes\RequiresAuthorization;
-use gijsbos\ApiServer\Classes\ReturnFilter;
-use gijsbos\ApiServer\Classes\Route;
-use gijsbos\ApiServer\Classes\RouteAttribute;
-use gijsbos\ApiServer\RouteController;
-use gijsbos\ClassParser\Classes\ClassObject;
+
 use gijsbos\ClassParser\ClassParser;
+use gijsbos\ClassParser\Classes\ClassObject;
 use gijsbos\CLIParser\CLIParser\Command;
 use gijsbos\Logging\Classes\LogEnabledClass;
-use LogicException;
 
 /**
  * RouteTestGenerator
@@ -34,22 +35,6 @@ class RouteTestGenerator extends LogEnabledClass
     public function __construct(array $opts = [])
     {
         parent::__construct($opts);
-    }
-
-    /**
-     * getRouteControllerClasses
-     */
-    private function getRouteControllerClasses()
-    {
-        return array_values(array_filter(get_declared_classes(), fn($c) => is_subclass_of($c, RouteController::class)));
-    }
-
-    /**
-     * getRouteControllerClassMethods
-     */
-    private function getRouteControllerClassMethods(ReflectionClass $reflection)
-    {
-        return array_values(array_filter($reflection->getMethods(), fn($m) => $m->isPublic()));
     }
 
     /**
@@ -519,15 +504,13 @@ PHP;
         if(strlen($outputFolder) == 0)
             throw new InvalidArgumentException("Argument 1 'outputFolder' is not set");
 
-        foreach($this->getRouteControllerClasses() as $class)
+        foreach(RouteParser::getRouteControllerClasses() as $class)
         {
-            log_info("Reading class: " . $class);
+            log_info("Reading class: " . $class->getName());
 
             $classObject = null; 
 
-            $reflection = new ReflectionClass($class);
-
-            foreach($this->getRouteControllerClassMethods($reflection) as $method)
+            foreach(RouteParser::getRouteControllerClassMethods($class) as $method)
             {
                 $route = RouteParser::getReflectionMethodAttributeOfSubclass($method, Route::class);
 
@@ -543,7 +526,7 @@ PHP;
 
                 // We create the object after we are sure there are routes in it.
                 if($classObject == null)
-                    $classObject = $this->getTestController($reflection, $outputFolder, $fileAlreadyExists);
+                    $classObject = $this->getTestController($class, $outputFolder, $fileAlreadyExists);
 
                 // Parsing
                 log_info("Reading method: " . $method->getName());

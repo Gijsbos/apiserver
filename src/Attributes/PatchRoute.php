@@ -1,21 +1,18 @@
 <?php
 declare(strict_types=1);
 
-namespace gijsbos\ApiServer\Classes;
+namespace gijsbos\ApiServer\Attributes;
 
 use Attribute;
 
 /**
- * PutRoute
+ * PatchRoute
  */
 #[Attribute(Attribute::TARGET_METHOD)]
-class PutRoute extends Route
+class PatchRoute extends Route
 {
-    /**
-     * __construct
-     */
     public function __construct(private string $path, int $status = 200)
     {
-        parent::__construct("PUT", $path, $status);
+        parent::__construct("PATCH", $path, $status);
     }
 }

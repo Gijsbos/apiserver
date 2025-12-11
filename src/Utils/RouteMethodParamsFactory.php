@@ -7,11 +7,11 @@ use ReflectionNamedType;
 use ReflectionUnionType;
 use RuntimeException;
 use ReflectionParameter;
+use gijsbos\ApiServer\Attributes\Route;
 use gijsbos\ApiServer\Classes\OptRequestParam;
 use gijsbos\ApiServer\Classes\PathVariable;
 use gijsbos\ApiServer\Classes\RequestHeader;
 use gijsbos\ApiServer\Classes\RequestParam;
-use gijsbos\ApiServer\Classes\Route;
 use gijsbos\ApiServer\Classes\RouteParam;
 use gijsbos\Http\Exceptions\BadRequestException;
 
