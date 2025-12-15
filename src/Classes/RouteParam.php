@@ -13,6 +13,7 @@ use ReflectionClass;
 class RouteParam implements RouteParamInterface
 {
     public string $name = "";
+    public null|string $description = null;
     public null|Route $route = null;
     public mixed $value = null;
     public null|string $type = null;
@@ -25,21 +26,51 @@ class RouteParam implements RouteParamInterface
     public mixed $default = null;
     public array $opts = [];
 
-    public function __construct(array $opts = [])
+    public function __construct(
+        array $opts = [],
+        null|string $type = null,
+        null|string $customType = null,
+        mixed $min = null,
+        mixed $max = null,
+        null|array|string $pattern = null,
+        null|array $values = null,
+        null|bool $required = null,
+        mixed $default = null,
+        null|string $description = null,
+        null|string $docs = null,
+    )
     {
-        $this->min = @$opts["min"];
-        $this->max = @$opts["max"];
-        $this->type = @$opts["type"];
-        $this->customType = @$opts["customType"];
-        $this->pattern = @$opts["pattern"];
-        $this->values = @$opts["values"];
-        $this->required = @$opts["required"] ?? true;
-        $this->default = @$opts["default"];
+        $this->type = $type ?? $this->extractFromOpts("type", $opts);
+        $this->customType = $customType ?? $this->extractFromOpts("customType", $opts);
+        $this->min = $min ?? $this->extractFromOpts("min", $opts);
+        $this->max = $max ?? $this->extractFromOpts("max", $opts);
+        $this->pattern = $pattern ?? $this->extractFromOpts("pattern", $opts);
+        $this->values = $values ?? $this->extractFromOpts("values", $opts);
+        $this->required = $required ?? $this->extractFromOpts("required", $opts) ?? true;
+        $this->default = $default ?? $this->extractFromOpts("default", $opts);
+        $this->description = $description ?? $this->extractFromOpts("description", $opts) ?? $docs ?? $this->extractFromOpts("docs", $opts);
+        $this->opts = $opts;
+    }
+
+    private function extractFromOpts(string $key, &$opts)
+    {
+        if(array_key_exists($key, $opts))
+        {
+            $value = $opts[$key];
+            unset($opts[$key]);
+            return $value;
+        }
+        return null;
     }
 
     public function getName()
     {
         return $this->name;
+    }
+
+    public function getDescription()
+    {
+        return $this->description;
     }
 
     public function getRoute()
@@ -84,7 +115,7 @@ class RouteParam implements RouteParamInterface
 
     public function getOpts()
     {
-        return $this->value;
+        return $this->opts;
     }
 
     public static function createWithoutConstructorFromObject($object, string $name, Route $route, mixed $value = null, mixed $type = null, mixed $customType = null)

@@ -8,7 +8,7 @@ use Attribute;
 /**
  * Docs
  */
-#[Attribute(Attribute::TARGET_METHOD)]
+#[Attribute(Attribute::TARGET_ALL)]
 class Docs extends DocsProperty
 {
     public function __construct(private string $name, private mixed $description)

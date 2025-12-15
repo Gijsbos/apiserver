@@ -26,6 +26,23 @@ class DocsFactory
     public function __construct()
     { }
 
+    private function extractDocs($methodOrClass)
+    {
+        $result = [];
+
+        foreach($methodOrClass->getAttributes(DocsProperty::class, ReflectionAttribute::IS_INSTANCEOF) as $docsProperty)
+        {
+            $docsData = $docsProperty->newInstance()->export();
+
+            if(count($docsData) > 0)
+            {
+                $result = array_merge($result, $docsData);
+            }
+        }
+
+        return $result;
+    }
+
     private function parseParam(ReflectionNamedType $reflectionType, &$parameterData)
     {
         $name = $reflectionType->getName();
@@ -39,7 +56,8 @@ class DocsFactory
         }
         else
         {
-            $parameterData["type"] = $name;
+            if(!is_string(@$parameterData["type"]))
+                $parameterData["type"] = $name;
         }
     }
     
@@ -146,15 +164,7 @@ class DocsFactory
             $routeData["returnFilter"] = $returnFilters[0]->newInstance()->getFilter();
         }
 
-        foreach($method->getAttributes(DocsProperty::class, ReflectionAttribute::IS_INSTANCEOF) as $docsProperty)
-        {
-            $propertyData = $docsProperty->newInstance()->export();
-
-            if(count($propertyData) > 0)
-            {
-                $routeData = array_merge($routeData, $propertyData);
-            }
-        }
+        $routeData = array_merge($routeData, $this->extractDocs($method));
 
         return $routeData;
     }
@@ -167,10 +177,12 @@ class DocsFactory
 
         foreach(RouteParser::getRouteControllerClasses() as $class)
         {
-            $data = [
+            $controllerData = [
                 "class" => $class->getName(),
                 "routes" => [],
             ];
+
+            $controllerData = array_merge($controllerData, $this->extractDocs($class));
 
             foreach(RouteParser::getRouteControllerClassMethods($class) as $method)
             {
@@ -182,15 +194,19 @@ class DocsFactory
                     {
                         $result = $routeDataCallback($routeData, $method, $class);
 
+                        if($result === false)
+                            continue;
+
                         if(is_array($result)) // Return is used, we assume its value
                             $routeData = $result;
                     }
 
-                    $data["routes"][] = $routeData;
+                    $controllerData["routes"][] = $routeData;
                 }
             }
 
-            $docs["controllers"][] = $data;
+            if(count($controllerData["routes"]) > 0)
+                $docs["controllers"][] = $controllerData;
         }
 
         return $docs;
