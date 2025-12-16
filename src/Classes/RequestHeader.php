@@ -38,6 +38,6 @@ class RequestHeader extends RouteParam
         }
 
         // Return key
-        return @$_SERVER[$key] ?? (function_exists('getallheaders') ? @\getallheaders()[$key] : null);
+        return @$_SERVER[$key] ?? @$_SERVER["REDIRECT_$key"] ?? (function_exists('getallheaders') ? @\getallheaders()[$key] : null);
     }
 }
