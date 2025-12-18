@@ -308,15 +308,21 @@ class Server extends LogEnabledClass
             // Search for placeholder
             else
             {
+                $foundPlaceholder = false;
+                
                 foreach($routes as $key => $value)
                 {
                     if(is_string($key) && str_starts_ends_with($key, "{", "}")) // Found placeholder
                     {
                         $routes = $routes[$key];
                         $pathVariables[unwrap($key, "{", "}")] = $fragment;
+                        $foundPlaceholder = true;
                         break;
                     }
                 }
+                
+                if(!$foundPlaceholder)
+                    throw new ResourceNotFoundException("routeNotFound", "Route does not exist");
             }
         }
 
