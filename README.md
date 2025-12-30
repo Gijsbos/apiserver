@@ -113,10 +113,16 @@ catch(RuntimeException | Exception | TypeError | Throwable $ex)
 
 ### Caching Routes
 
-Routes paths are cached in the cache folder, you can use the bin/api binary to cache routes.  
+Routes paths are cached in the cache folder, you can use the bin/api binary to cache routes. When there is no routes file, a cache will be created upon first use.  
 
 ```
 ./bin/api cache routes -(v)erbose (--autoload <file>)
+```
+
+Enable APCU in your PHP build for faster route resolving. Build Docker images with the following command:  
+
+```
+RUN pecl install apcu && docker-php-ext-enable apcu
 ```
 
 ### Contributions
