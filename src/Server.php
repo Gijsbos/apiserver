@@ -29,8 +29,10 @@ use gijsbos\Logging\Classes\LogEnabledClass;
  */
 class Server extends LogEnabledClass
 {
+    const APCU_ROUTES_KEY = "APCU_ROUTES";
+
     public static string $DEFAULT_ROUTES_FILE = "cache/apiserver/routes.php";
-    public static $ROUTE_CACHE = null;
+    public static null|array $ROUTE_CACHE = null;
 
     /**
      * @var array responseHandler
@@ -256,14 +258,37 @@ class Server extends LogEnabledClass
         ->parseControllerFiles();
     }
 
+    /**
+     * getRoutes
+     */
     private function getRoutes()
     {
-        if(self::$ROUTE_CACHE !== null)
+        if(function_exists('apcu_fetch') && function_exists('apcu_store'))
+        {
+            $routes = apcu_fetch(self::APCU_ROUTES_KEY, $success);
+
+            if ($success)
+            {
+                return $routes;
+            }
+            else
+            {
+                $routes = require_once $this->routesFile;
+
+                apcu_store(self::APCU_ROUTES_KEY, $routes);
+
+                return $routes;
+            }
+        }
+        else
+        {
+            if(self::$ROUTE_CACHE !== null)
+                return self::$ROUTE_CACHE;
+
+            self::$ROUTE_CACHE = require_once $this->routesFile;
+
             return self::$ROUTE_CACHE;
-
-        self::$ROUTE_CACHE = require_once $this->routesFile;
-
-        return self::$ROUTE_CACHE;
+        }
     }
 
     /**

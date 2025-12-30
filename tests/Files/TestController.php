@@ -5,6 +5,7 @@ use gijsbos\ApiServer\Attributes\DeleteRoute;
 use gijsbos\ApiServer\Attributes\GetRoute;
 use gijsbos\ApiServer\Classes\PathVariable;
 use gijsbos\ApiServer\Attributes\PostRoute;
+use gijsbos\ApiServer\Attributes\Published;
 use gijsbos\ApiServer\Attributes\PutRoute;
 use gijsbos\ApiServer\Classes\RequestHeader;
 use gijsbos\ApiServer\Classes\RequestParam;
@@ -93,6 +94,21 @@ class TestController extends RouteController
     {
         return [
             "token" => $authorization,
+        ];
+    }
+
+    /**
+     * notPublished
+     */
+    #[Published(false)]
+    #[GetRoute('/test/not-published')]
+    #[RequiresAuthorization()]
+    public function notPublished(
+        RequestHeader|string $authorization = new RequestHeader(),
+    )
+    {
+        return [
+            "result" => "ok",
         ];
     }
 

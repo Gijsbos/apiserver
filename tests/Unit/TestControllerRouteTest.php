@@ -112,4 +112,14 @@ class TestControllerRouteTest extends TestCase
         # Test Result
         $this->assertFalse($response->isSuccessful(), $response->getErrorString());
     }
+
+    public function testNotPublished() : void
+    {
+        $response = HTTPRequest::get([
+            "uri" => RouteParser::getRoute(['TestController', 'notPublished'])->getFullPath(false),
+        ]);
+
+        # Test Result
+        $this->assertFalse($response->isSuccessful(), $response->getErrorString());
+    }
 }

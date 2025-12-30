@@ -3,6 +3,7 @@ declare(strict_types=1);
 
 namespace gijsbos\ApiServer\Utils;
 
+use gijsbos\ApiServer\Attributes\Published;
 use gijsbos\ApiServer\Attributes\Route;
 use InvalidArgumentException;
 use ReflectionClass;
@@ -45,6 +46,8 @@ class RouteParser extends LogEnabledClass
 
     /**
      * getRouteControllerClassMethods
+     * 
+     * @return ReflectionMethod[]
      */
     public static function getRouteControllerClassMethods(ReflectionClass $reflection)
     {
@@ -139,6 +142,8 @@ class RouteParser extends LogEnabledClass
 
     /**
      * parseMethods
+     * 
+     * @param ReflectionMethod[] $methods
      */
     private function parseMethods(string $className, array $methods, array &$prefixTree)
     {
@@ -156,6 +161,19 @@ class RouteParser extends LogEnabledClass
             {
                 log_debug("Skipping method \"$methodName\" in \"$className\", no Route attribute set");
                 continue;
+            }
+
+            $published = $method->getAttributes(Published::class);
+
+            if(count($published) > 0)
+            {
+                $published = $published[0]->newInstance();
+                
+                if(!$published->isPublished())
+                {
+                    log_debug("Skipping method \"$methodName\" in \"$className\", Route not Published");
+                    continue;
+                }
             }
 
             log_info("Add method (".$route->getRequestMethod().") \"$methodName\" in \"$className\" with path: " . $route->getPath());
