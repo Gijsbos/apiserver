@@ -53,6 +53,13 @@ if(($index = array_search("--scan-folders", $argv)) && ($scan = @$argv[$index+1]
         scanFolder($folder);
 }
 
+# Env var
+else if(is_string($scan = getenv("CLI_SCAN_FOLDERS")))
+{
+    foreach(explode(",", $scan) as $folder)
+        scanFolder($folder);
+}
+
 use gijsbos\CLIParser\CLIParser\CommandLineParser;
 use gijsbos\ApiServer\Utils\RouteParser;
 use gijsbos\ApiServer\Utils\RouteTestGenerator;
