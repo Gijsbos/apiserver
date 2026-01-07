@@ -19,13 +19,38 @@ else if(is_string($autoload = getenv("CLI_AUTOLOAD")))
 # Default
 else
 {
-    # Look for custom overload file
-    if(is_file("src/autoload.php"))
-        include_once "./src/autoload.php";
+    include_once "./vendor/autoload.php";
+}
 
-    # Fallback to vendor autoload
-    else
-        include_once "./vendor/autoload.php";
+/**
+ * scanFolder
+ * 
+ * @param string $folder - folder to scan for controllers
+ */
+function scanFolder(string $folder)
+{
+    if(!is_dir($folder))
+        throw new RuntimeException("Folder '$folder' does not exist");
+
+    foreach(scandir($folder) as $folderItem)
+    {
+        if($folderItem !== "." && $folderItem !== "..")
+        {
+            $path = "$folder/$folderItem";
+
+            if(is_file($path) && str_ends_with($path, ".php"))
+                include_once $path;
+            else if(is_dir($path))
+                scanFolder($path);
+        }
+    }
+}
+
+# Scan directories for discovering controllers through option: --scan <folderPath1,folderPath2,...>
+if(($index = array_search("--scan-folders", $argv)) && ($scan = @$argv[$index+1]) !== null)
+{
+    foreach(explode(",", $scan) as $folder)
+        scanFolder($folder);
 }
 
 use gijsbos\CLIParser\CLIParser\CommandLineParser;
