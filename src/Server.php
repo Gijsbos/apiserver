@@ -254,8 +254,12 @@ class Server extends LogEnabledClass
      */
     private function createRouteCache()
     {
-        (new RouteParser($this->routesFile))
-        ->parseControllerFiles();
+        if(is_string($scan = getenv("CLI_SCAN_FOLDERS")))
+        {
+            RouteParser::includeControllers(explode(",", $scan));
+        }
+        
+        (new RouteParser($this->routesFile))->parseControllerFiles();
     }
 
     /**

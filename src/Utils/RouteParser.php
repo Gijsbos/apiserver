@@ -3,16 +3,17 @@ declare(strict_types=1);
 
 namespace gijsbos\ApiServer\Utils;
 
-use gijsbos\ApiServer\Attributes\Published;
-use gijsbos\ApiServer\Attributes\Route;
 use InvalidArgumentException;
 use ReflectionClass;
 use ReflectionMethod;
+use ReflectionAttribute;
+
+use gijsbos\ApiServer\Attributes\Published;
+use gijsbos\ApiServer\Attributes\Route;
 use gijsbos\ApiServer\RouteController;
 use gijsbos\ApiServer\Server;
 use gijsbos\CLIParser\CLIParser\Command;
 use gijsbos\Logging\Classes\LogEnabledClass;
-use ReflectionAttribute;
 
 /**
  * RouteParser
