@@ -377,6 +377,10 @@ class Server extends LogEnabledClass
             
             return $data->getParameters();
         }
+        else if($data instanceof \stdClass)
+        {
+            return $data;
+        }
         else if($data instanceof \DateTime)
         {
             $format = $this->dateTimeFormat;
@@ -404,9 +408,9 @@ class Server extends LogEnabledClass
     }
 
     /**
-     * toArray
+     * processData
      */
-    private function toArray($data) : array
+    private function processData($data)
     {
         if(is_object($data))
             return $this->convertObject($data);
@@ -421,7 +425,7 @@ class Server extends LogEnabledClass
 
                 // Repeat for every array
                 if(is_array($value) || is_object($value))
-                    $value = $this->toArray($value);
+                    $value = $this->processData($value);
             }
         }
 
@@ -479,8 +483,8 @@ class Server extends LogEnabledClass
         // Execute route
         $returnData = $controller->$methodName(...((new RouteMethodParamsFactory())->generateMethodParams($route)));
 
-        // Turn data into array
-        $returnData = $this->toArray($returnData);
+        // Process data
+        $returnData = $this->processData($returnData);
 
         // Apply filter
         $returnData = $this->applyReturnFilter($route, $returnData);
