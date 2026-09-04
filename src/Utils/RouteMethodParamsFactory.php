@@ -55,13 +55,15 @@ class RouteMethodParamsFactory
      */
     private function getRouteParamClassFromParameter(ReflectionParameter $parameter, null|string &$primitiveType = null, null|bool &$canBeNull = null, null|string &$customClass = null)
     {
+        $primitiveType = null;
+        $canBeNull = null;
+        $customClass = null;
+
         $type = $parameter->getType();
 
         if($type instanceof ReflectionUnionType)
         {
             $routeParamClass = null;
-            $canBeNull = false;
-            $customClass = null;
 
             foreach($type->getTypes() as $type)
             {
@@ -244,10 +246,14 @@ class RouteMethodParamsFactory
                     if(is_string($customClass)) // Route argument defined custom class
                     {
                         if(enum_exists($customClass) && $routeParam->value)
-                            $routeParam->value = EnumRouteArgumentParser::parse($routeParam->name, $customClass, $routeParam->value);
+                            $params[$paramName] = EnumRouteArgumentParser::parse($routeParam->name, $customClass, $routeParam->value);
+                        else
+                            $params[$paramName] = $routeParam->value;
                     }
-                    
-                    $params[$paramName] = $routeParam->value;
+                    else
+                    {
+                        $params[$paramName] = $routeParam->value;
+                    }
                 }
             }
             else
