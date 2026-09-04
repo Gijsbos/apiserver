@@ -1,7 +1,7 @@
 <?php
 declare(strict_types=1);
 
-namespace gijsbos\ApiServer\Utils;
+namespace gijsbos\ApiServer\Parsers;
 
 use SimpleXMLElement;
 

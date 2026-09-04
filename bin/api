@@ -61,7 +61,7 @@ else if(is_string($scan = getenv("CLI_SCAN_FOLDERS")))
 }
 
 use gijsbos\CLIParser\CLIParser\CommandLineParser;
-use gijsbos\ApiServer\Utils\RouteParser;
+use gijsbos\ApiServer\Parsers\RouteParser;
 use gijsbos\ApiServer\Utils\RouteTestGenerator;
 
 /**

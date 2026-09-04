@@ -18,9 +18,9 @@ use gijsbos\Http\Exceptions\ForbiddenException;
 use gijsbos\Http\Exceptions\HTTPRequestException;
 use gijsbos\Http\Exceptions\ResourceNotFoundException;
 use gijsbos\ApiServer\Interfaces\RouteInterface;
-use gijsbos\ApiServer\Utils\ArrayToXmlParser;
+use gijsbos\ApiServer\Parsers\ArrayToXmlParser;
 use gijsbos\ApiServer\Utils\RouteMethodParamsFactory;
-use gijsbos\ApiServer\Utils\RouteParser;
+use gijsbos\ApiServer\Parsers\RouteParser;
 use gijsbos\Logging\Classes\LogEnabledClass;
 
 

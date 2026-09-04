@@ -3,7 +3,7 @@ declare(strict_types=1);
 
 namespace gijsbos\ApiServer;
 
-use gijsbos\ApiServer\Utils\RouteParser;
+use gijsbos\ApiServer\Parsers\RouteParser;
 use PHPUnit\Framework\TestCase;
 
 final class ServerTest extends TestCase

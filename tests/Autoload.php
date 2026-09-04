@@ -1,7 +1,7 @@
 <?php
 declare(strict_types=1);
 
-use gijsbos\ApiServer\Utils\RouteParser;
+use gijsbos\ApiServer\Parsers\RouteParser;
 use gijsbos\ExtFuncs\Utils\DotEnv;
 
 # Source

@@ -1,7 +1,7 @@
 <?php
 declare(strict_types=1);
 
-namespace gijsbos\ApiServer\Utils;
+namespace gijsbos\ApiServer\Parsers;
 
 use InvalidArgumentException;
 use ReflectionClass;
@@ -20,6 +20,11 @@ use gijsbos\Logging\Classes\LogEnabledClass;
  */
 class RouteParser extends LogEnabledClass
 {
+    /**
+     * @var array<string, string> Map of "REQUEST_METHOD path" => "Class::method" for already registered routes
+     */
+    private array $registered = [];
+
     /**
      * __construct
      */
@@ -177,8 +182,18 @@ class RouteParser extends LogEnabledClass
                 }
             }
 
-            log_info("Add method (".$route->getRequestMethod().") \"$methodName\" in \"$className\" with path: " . $route->getPath());
-            $this->buildTrix($route, $prefixTree, "$className::$methodName");
+            $classMethod = "$className::$methodName";
+            $routeKey = $route->getRequestMethod() . " " . $route->getPath();
+
+            if(array_key_exists($routeKey, $this->registered))
+            {
+                log_info("Duplicate route \"$routeKey\": already registered by \"{$this->registered[$routeKey]}\", cannot register \"$classMethod\""); 
+            }
+
+            $this->registered[$routeKey] = $classMethod;
+
+            log_debug("Add method (".$route->getRequestMethod().") \"$methodName\" in \"$className\" with path: " . $route->getPath());
+            $this->buildTrix($route, $prefixTree, $classMethod);
         }
     }
 
@@ -242,6 +257,8 @@ class RouteParser extends LogEnabledClass
             mkdir($targetDir, 0777, true);
 
         file_put_contents($this->routesFile, $trie);
+
+        log_info("Registered \"".count($this->registered)."\" routes(s)");
     }
 
     /**

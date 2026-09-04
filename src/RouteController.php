@@ -11,7 +11,7 @@ use gijsbos\ApiServer\Classes\RequestParam;
 use gijsbos\ApiServer\Attributes\ReturnFilter;
 use gijsbos\ApiServer\Attributes\Route;
 use gijsbos\ApiServer\Interfaces\RouteInterface;
-use gijsbos\ApiServer\Utils\RouteParser;
+use gijsbos\ApiServer\Parsers\RouteParser;
 use gijsbos\Logging\Classes\LogEnabledClass;
 
 /**

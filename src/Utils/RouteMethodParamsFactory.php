@@ -13,6 +13,7 @@ use gijsbos\ApiServer\Classes\PathVariable;
 use gijsbos\ApiServer\Classes\RequestHeader;
 use gijsbos\ApiServer\Classes\RequestParam;
 use gijsbos\ApiServer\Classes\RouteParam;
+use gijsbos\ApiServer\Parsers\EnumRouteArgumentParser;
 use gijsbos\Http\Exceptions\BadRequestException;
 
 /**
@@ -26,7 +27,7 @@ class RouteMethodParamsFactory
     /**
      * getDataFromReflectionNamedType
      */
-    private function getDataFromReflectionNamedType(ReflectionNamedType $type, null|string &$primitiveType = null)
+    private function getDataFromReflectionNamedType(ReflectionNamedType $type, null|string &$primitiveType = null, null|string &$customClass = null)
     {
         $typeName = $type->getName();
 
@@ -36,6 +37,10 @@ class RouteMethodParamsFactory
             {
                 return $type->getName();
             }
+            else
+            {
+                $customClass = $type->getName();
+            }
         }
         else
         {
@@ -44,10 +49,11 @@ class RouteMethodParamsFactory
 
         return null;
     }
+
     /**
      * getRouteParamClassFromTypes
      */
-    private function getRouteParamClassFromParameter(ReflectionParameter $parameter, null|string &$primitiveType = null, null|bool &$canBeNull = null)
+    private function getRouteParamClassFromParameter(ReflectionParameter $parameter, null|string &$primitiveType = null, null|bool &$canBeNull = null, null|string &$customClass = null)
     {
         $type = $parameter->getType();
 
@@ -55,10 +61,11 @@ class RouteMethodParamsFactory
         {
             $routeParamClass = null;
             $canBeNull = false;
+            $customClass = null;
 
             foreach($type->getTypes() as $type)
             {
-                $rpc = $this->getDataFromReflectionNamedType($type, $pt);
+                $rpc = $this->getDataFromReflectionNamedType($type, $pt, $cc);
 
                 if($rpc !== null)
                     $routeParamClass = $rpc;
@@ -68,6 +75,9 @@ class RouteMethodParamsFactory
 
                 else if($pt !== null)
                     $primitiveType = $pt;
+
+                if($cc !== null)
+                    $customClass = $cc;
             }
 
             return $routeParamClass;
@@ -183,7 +193,7 @@ class RouteMethodParamsFactory
             $paramName = $parameter->getName();
 
             // Get route param className
-            $routeParamClassName = $this->getRouteParamClassFromParameter($parameter, $primitiveType, $canBeNull);
+            $routeParamClassName = $this->getRouteParamClassFromParameter($parameter, $primitiveType, $canBeNull, $customClass);
 
             // Found Route Param
             if($routeParamClassName !== null)
@@ -201,7 +211,7 @@ class RouteMethodParamsFactory
 
                 // Validate param
                 RouteParamValidator::validate($routeParam);
-
+           
                 // Add param to route
                 $route->addRouteParam($routeParam);
 
@@ -229,10 +239,15 @@ class RouteMethodParamsFactory
                     
                     $params[$paramName] = $routeParam->value;
                 }
-
                 else
                 {
-                    $params[$paramName] = $routeParam->value; // Set value
+                    if(is_string($customClass)) // Route argument defined custom class
+                    {
+                        if(enum_exists($customClass) && $routeParam->value)
+                            $routeParam->value = EnumRouteArgumentParser::parse($routeParam->name, $customClass, $routeParam->value);
+                    }
+                    
+                    $params[$paramName] = $routeParam->value;
                 }
             }
             else

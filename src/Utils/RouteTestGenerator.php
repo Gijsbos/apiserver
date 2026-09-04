@@ -18,7 +18,7 @@ use gijsbos\ApiServer\Attributes\RouteAttribute;
 use gijsbos\ApiServer\Classes\OptRequestParam;
 use gijsbos\ApiServer\Classes\RequestHeader;
 use gijsbos\ApiServer\Classes\RequestParam;
-
+use gijsbos\ApiServer\Parsers\RouteParser;
 use gijsbos\ClassParser\ClassParser;
 use gijsbos\ClassParser\Classes\ClassObject;
 use gijsbos\CLIParser\CLIParser\Command;
@@ -81,7 +81,7 @@ class RouteTestGenerator extends LogEnabledClass
 declare(strict_types=1);$namespaceContent
 
 use PHPUnit\Framework\TestCase;
-use gijsbos\ApiServer\Utils\RouteParser;
+use gijsbos\ApiServer\Parsers\RouteParser;
 use gijsbos\Http\Http\HTTPRequest;
 
 /**
