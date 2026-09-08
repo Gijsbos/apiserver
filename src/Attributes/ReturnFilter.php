@@ -5,6 +5,9 @@ namespace gijsbos\ApiServer\Attributes;
 
 use Attribute;
 use Exception;
+use InvalidArgumentException;
+use ReflectionClass;
+use ReflectionProperty;
 
 /**
  * ReturnFilter
@@ -12,8 +15,43 @@ use Exception;
 #[Attribute(Attribute::TARGET_METHOD)]
 class ReturnFilter extends RouteAttribute
 {
-    public function __construct(private array $filter)
-    { }
+    public function __construct(private string|array $filter)
+    {
+        $this->filter = $this->initFilterData($this->filter);
+    }
+
+    /**
+     * getClassPropertyNames
+     */
+    private function getClassPropertyNames(string $className)
+    {
+        return array_map(fn($p) => $p->getName(), new ReflectionClass($className)->getProperties(ReflectionProperty::IS_PUBLIC));
+    }
+
+    /**
+     * initFilterData
+     */
+    private function initFilterData(string|array $data)
+    {
+        if(is_string($data))
+        {
+            if(!class_exists($data))
+                throw new InvalidArgumentException("Invalid filter input, expected array|className");
+
+            return $this->getClassPropertyNames($data);
+        }
+        else
+        {
+            array_walk_recursive($data, function(&$value, $key)
+            {
+                if(is_string($value) && class_exists($value))
+                    $value = $this->getClassPropertyNames($value);
+
+            });
+            
+            return $data;
+        }
+    }
 
     /**
      * getFilter
@@ -34,7 +72,7 @@ class ReturnFilter extends RouteAttribute
     /**
      * applyFilter
      */
-    public function applyFilter(array $data, null|array &$filter = null) : array
+    public function applyFilter(array|object $data, null|array &$filter = null) : array
     {
         $filter = $filter ?? $this->filter ?? [];
 
