@@ -15,6 +15,8 @@ use ReflectionProperty;
 #[Attribute(Attribute::TARGET_METHOD)]
 class ReturnFilter extends RouteAttribute
 {
+    const DOC_COMMENT_VAR_SYMBOL_SEARCH = "@var ";
+
     public function __construct(private string|array $filter)
     {
         $this->filter = $this->initFilterData($this->filter);
@@ -29,25 +31,129 @@ class ReturnFilter extends RouteAttribute
     }
 
     /**
-     * initFilterData
+     * isPrimitiveType
      */
-    private function initFilterData(string|array $data)
+    private function isPrimitiveType(string $type)
     {
-        if(is_string($data))
+        return in_array($type, ["string","int","float","double","mixed","bool"]);
+    }
+
+    /**
+     * isUnionType
+     */
+    private function isUnionType(string $type) : bool
+    {
+        return str_contains($type, "|");
+    }
+
+    /**
+     * getClassNameFromType
+     */
+    private function getClassNameFromType(string $parentClassName, string $type)
+    {
+        $namespace = new ReflectionClass($parentClassName)->getNamespaceName();
+
+        $typeClassName = trim((strlen($namespace) ? $namespace . "\\" . $type : $type));
+
+        if(str_ends_with($typeClassName, "[]"))
+        {
+            $typeClassName = substr($typeClassName, 0, strlen($typeClassName) - 2);
+        }
+
+        if(class_exists($typeClassName))
+        {
+            return $typeClassName;
+        }
+
+        return null;
+    }
+
+    /**
+     * resolveDocPropertyClassName
+     */
+    private function resolveDocPropertyClassName(string $className, string $propertyName)
+    {
+        $propertyDocComment = new ReflectionProperty($className, $propertyName)->getDocComment();
+
+        if($propertyDocComment !== false)
+        {
+            $varPos = strpos($propertyDocComment, self::DOC_COMMENT_VAR_SYMBOL_SEARCH);
+
+            if($varPos !== false)
+            {
+                $type = explode(" ", substr($propertyDocComment, $varPos + strlen(self::DOC_COMMENT_VAR_SYMBOL_SEARCH)))[0];
+
+                if($this->isPrimitiveType($type) || $this->isUnionType($type))
+                    return null;
+
+                return $this->getClassNameFromType($className, $type);
+            }
+        }
+
+        return null;
+    }
+
+    /**
+     * initFilterData
+     * 
+     * @param string|array ClassName or Array with property names
+     */
+    private function initFilterData(string|array $data, ?string $targetClassName = null)
+    {
+        if(is_string($data)) // ClassName
         {
             if(!class_exists($data))
                 throw new InvalidArgumentException("Invalid filter input, expected array|className");
 
-            return $this->getClassPropertyNames($data);
+            $classPropertyNames = $this->getClassPropertyNames($data);
+
+            return $this->initFilterData($classPropertyNames, $data);
         }
         else
         {
-            array_walk_recursive($data, function(&$value, $key)
+            foreach($data as $i => $propertyName)
             {
-                if(is_string($value) && class_exists($value))
-                    $value = $this->getClassPropertyNames($value);
+                if(is_string($propertyName))
+                {
+                    if(is_string($targetClassName)) // Class Context Set
+                    {
+                        if(property_exists($targetClassName, $propertyName))
+                        {
+                            $resolvedPropertyClassName = $this->resolveDocPropertyClassName($targetClassName, $propertyName);
+                            
+                            if(is_string($resolvedPropertyClassName))
+                            {
+                                $classPropertyNames = $this->getClassPropertyNames($resolvedPropertyClassName);
 
-            });
+                                $resolvedFilterData = $this->initFilterData($classPropertyNames, $resolvedPropertyClassName);
+
+                                // Replace the "$i => $propertyName" entry with "$propertyName => [...]"
+                                // in place, so the property keeps its original position in the array.
+                                $rebuilt = [];
+
+                                foreach($data as $existingKey => $existingValue)
+                                {
+                                    if($existingKey === $i)
+                                        $rebuilt[$propertyName] = $resolvedFilterData;
+                                    else
+                                        $rebuilt[$existingKey] = $existingValue;
+                                }
+
+                                $data = $rebuilt;
+                            }
+                        }
+                    }
+                    else
+                    {
+                        if(class_exists($propertyName))
+                        {
+                            $classPropertyNames = $this->getClassPropertyNames($propertyName);
+
+                            $data[$i] = $this->initFilterData($classPropertyNames, $propertyName);
+                        }
+                    }
+                }
+            }
             
             return $data;
         }
