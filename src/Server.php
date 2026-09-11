@@ -599,6 +599,12 @@ class Server extends LogEnabledClass
         catch(HTTPRequestException $ex)
         {
             $ex->sendJson();
+
+            if($ex->getStatusCode() == 500)
+            {
+                log_error($ex->getMessage());
+                log_error($ex->getTraceAsString());
+            }
         }
         catch(RuntimeException | Exception | TypeError | Throwable $ex)
         {
