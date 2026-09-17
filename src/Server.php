@@ -7,22 +7,20 @@ use Exception;
 use RuntimeException;
 use Throwable;
 use TypeError;
-use ReflectionClass;
 use UnexpectedValueException;
 
 use gijsbos\Http\Response;
 use gijsbos\ApiServer\Classes\RequestHeader;
 use gijsbos\ApiServer\Attributes\ReturnFilter;
 use gijsbos\ApiServer\Attributes\Route;
-use gijsbos\Http\Exceptions\ForbiddenException;
 use gijsbos\Http\Exceptions\HTTPRequestException;
 use gijsbos\Http\Exceptions\ResourceNotFoundException;
+use gijsbos\Http\Exceptions\UpgradeRequiredException;
 use gijsbos\ApiServer\Interfaces\RouteInterface;
 use gijsbos\ApiServer\Parsers\ArrayToXmlParser;
 use gijsbos\ApiServer\Utils\RouteMethodParamsFactory;
 use gijsbos\ApiServer\Parsers\RouteParser;
 use gijsbos\Logging\Classes\LogEnabledClass;
-
 
 /**
  * Server
@@ -35,7 +33,26 @@ class Server extends LogEnabledClass
     public static null|array $ROUTE_CACHE = null;
 
     /**
-     * @var array responseHandler
+     * @var SecurityContext|null securityContext
+     *  When set, authenticate() runs on every request before route resolution
+     */
+    public static null|SecurityContext $securityContext = null;
+
+    /**
+     * @var Cors|null cors
+     *  When set, handle() runs on every request before route resolution
+     */
+    public static null|Cors $cors = null;
+
+    /**
+     * @var array beforeRequestHandlers
+     *  Allows for custom handling before a route is resolved, beyond
+     *  $securityContext/$cors - see addBeforeRequestHandler()
+     */
+    public static array $beforeRequestHandlers = [];
+
+    /**
+     * @var callable|null responseHandler
      *  Allows for custom response handling
      */
     public static $responseHandler = null;
@@ -44,7 +61,7 @@ class Server extends LogEnabledClass
      * @var array exceptionHandlers
      *  Allows for custom exception handling
      */
-    public static $exceptionHandlers = [];
+    public static null|array $exceptionHandlers = [];
 
     private string $requestMethod;
     private string $requestURI;
@@ -80,6 +97,14 @@ class Server extends LogEnabledClass
         $this->routesFile = @$opts["routesFile"] ?? self::$DEFAULT_ROUTES_FILE;
 
         $this->setLogOutput("file");
+    }
+
+    /**
+     * addBeforeRequestHandler
+     */
+    public static function addBeforeRequestHandler(callable $handler) : void
+    {
+        self::$beforeRequestHandlers[] = $handler;
     }
 
     /**
@@ -200,7 +225,7 @@ class Server extends LogEnabledClass
     private function verifyHttps()
     {
         if($this->requireHttps && !$this->isHttps())
-            throw new ForbiddenException("httpsRequired", "Requests must be made over HTTPS");
+            throw new UpgradeRequiredException("httpsRequired", "Requests must be made over HTTPS");
     }
 
     /**
@@ -374,7 +399,7 @@ class Server extends LogEnabledClass
         if($data instanceof Response)
         {
             $this->route->setStatusCode($data->getStatusCode());
-            
+
             return $data->getParameters();
         }
         else if($data instanceof \stdClass)
@@ -394,16 +419,9 @@ class Server extends LogEnabledClass
         }
         else
         {
-            $reflectionClass = new ReflectionClass($data);
-
-            // Filter out non-public properties
-            return array_filter((array) $data, function($key) use ($reflectionClass)
-            {
-                if($reflectionClass->hasProperty($key))
-                    return $reflectionClass->getProperty($key)->isPublic();
-                else
-                    return true;
-            }, ARRAY_FILTER_USE_KEY);
+            // Called from outside $data's class, so this naturally sees only
+            // public (declared + dynamic) properties - no reflection needed.
+            return get_object_vars($data);
         }
     }
 
@@ -497,12 +515,29 @@ class Server extends LogEnabledClass
     }
 
     /**
+     * invokeHandler
+     */
+    private function invokeHandler(mixed $handler, array $args) : void
+    {
+        if(is_callable($handler))
+            $handler(...$args);
+    }
+
+    /**
+     * executeBeforeRequestHandlers
+     */
+    private function executeBeforeRequestHandlers() : void
+    {
+        foreach(self::$beforeRequestHandlers as $callable)
+            $this->invokeHandler($callable, [$this]);
+    }
+
+    /**
      * executeResponseHandler
      */
-    private function executeResponseHandler(array $responseData)
+    private function executeResponseHandler(array $responseData) : void
     {
-        if(@Server::$responseHandler !== null && is_callable($method = @Server::$responseHandler))
-            $method($responseData, $this); 
+        $this->invokeHandler(self::$responseHandler, [$responseData, $this]);
     }
 
     /**
@@ -518,14 +553,14 @@ class Server extends LogEnabledClass
                 Header('Content-Type: application/xml; charset=utf-8');
                 http_response_code($this->getRoute()?->getStatusCode() ?? 200);
                 echo (new ArrayToXmlParser())->arrayToXml($responseData)->asXML();
-            exit();
+            return;
 
             case "application/json":
             default:
                 Header('Content-Type: application/json; charset=utf-8');
                 http_response_code($this->getRoute()?->getStatusCode() ?? 200);
                 echo json_encode($responseData);
-            exit();
+            return;
         }
     }
 
@@ -564,6 +599,17 @@ class Server extends LogEnabledClass
         {
             // Verify if https is required
             $this->verifyHttps();
+
+            // Handle CORS - preflight OPTIONS requests are short-circuited here,
+            // before any auth check (a preflight never carries credentials)
+            if(self::$cors?->handle($this) === true)
+                return;
+
+            // Enforce SecurityContext's path-based authorization rules
+            self::$securityContext?->authenticate($this);
+
+            // Execute any other registered before-request handlers
+            $this->executeBeforeRequestHandlers();
 
             // Lookup route
             $this->route = $this->matchRoute();
@@ -628,7 +674,7 @@ class Server extends LogEnabledClass
                     "errorDescription" => $rex->getMessage(),
                     "statusCode" => 500,
                 ]));
-                exit(0);
+                return;
             }
 
             if($ex instanceof HTTPRequestException)
@@ -643,7 +689,7 @@ class Server extends LogEnabledClass
                     "errorDescription" => $ex->getMessage(),
                     "statusCode" => 500,
                 ]));
-                exit(0);
+                return;
             }
         }
     }

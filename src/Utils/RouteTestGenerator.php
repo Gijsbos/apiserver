@@ -10,7 +10,7 @@ use ReflectionUnionType;
 use InvalidArgumentException;
 use LogicException;
 
-use gijsbos\ApiServer\Attributes\RequiresAuthorization;
+use gijsbos\ApiServer\Attributes\RequiresAuthority;
 use gijsbos\ApiServer\Attributes\ReturnFilter;
 use gijsbos\ApiServer\Attributes\Route;
 use gijsbos\ApiServer\Attributes\RouteAttribute;
@@ -386,15 +386,15 @@ PHP;
     }
 
     /**
-     * addAuthorizationHeaderIfRequiresAuthorizationIsSet
+     * addAuthorizationHeaderIfRequiresAuthorityIsSet
      */
-    private function addAuthorizationHeaderIfRequiresAuthorizationIsSet(ReflectionMethod $method, &$requestHeaders)
+    private function addAuthorizationHeaderIfRequiresAuthorityIsSet(ReflectionMethod $method, &$requestHeaders)
     {
         // Check for auth attribute, if set, we include an auth token
-        $authorizationAttributes = RouteParser::getReflectionMethodAttributeOfClass($method, RequiresAuthorization::class);
+        $authorizationAttributes = RouteParser::getReflectionMethodAttributeOfClass($method, RequiresAuthority::class);
 
-        // Merge with props that inherit from RequiresAuthorization::class
-        $authorizationAttributesInherited = RouteParser::getReflectionMethodAttributeOfSubclass($method, RequiresAuthorization::class);
+        // Merge with props that inherit from RequiresAuthority::class
+        $authorizationAttributesInherited = RouteParser::getReflectionMethodAttributeOfSubclass($method, RequiresAuthority::class);
 
         // Merge
         $merged = array_merge($authorizationAttributes, $authorizationAttributesInherited);
@@ -422,7 +422,7 @@ PHP;
         $requestParams = $methodParameterIndex["requestParams"];
 
         // Check for requires auth
-        $this->addAuthorizationHeaderIfRequiresAuthorizationIsSet($method, $requestHeaders);
+        $this->addAuthorizationHeaderIfRequiresAuthorityIsSet($method, $requestHeaders);
 
         // Create variable definitions
         $pathVariableDefinitions = $this->createPathVariableDefinitions($route);

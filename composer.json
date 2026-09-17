@@ -24,7 +24,6 @@
         }
     },
     "require": {
-        "gijsbos/yamlspeed": "^1.0",
         "gijsbos/stringfuncs": "^1.2",
         "gijsbos/php-cli-parser": "^1.0",
         "gijsbos/http": "^1.2",
