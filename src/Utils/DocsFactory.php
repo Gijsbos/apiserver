@@ -17,6 +17,7 @@ use gijsbos\ApiServer\Classes\OptRequestParam;
 use gijsbos\ApiServer\Classes\PathVariable;
 use gijsbos\ApiServer\Classes\RequestHeader;
 use gijsbos\ApiServer\Classes\RouteParam;
+use gijsbos\ApiServer\Parsers\RouteParser;
 
 /**
  * DocsFactory
