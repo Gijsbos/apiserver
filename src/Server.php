@@ -13,6 +13,7 @@ use gijsbos\Http\Response;
 use gijsbos\ApiServer\Classes\RequestHeader;
 use gijsbos\ApiServer\Attributes\ReturnFilter;
 use gijsbos\ApiServer\Attributes\Route;
+use gijsbos\ApiServer\Authentication\AuthenticationVerifier;
 use gijsbos\Http\Exceptions\HTTPRequestException;
 use gijsbos\Http\Exceptions\ResourceNotFoundException;
 use gijsbos\Http\Exceptions\UpgradeRequiredException;
@@ -39,6 +40,12 @@ class Server extends LogEnabledClass
     public static null|SecurityContext $securityContext = null;
 
     /**
+     * @var SecurityContext|null securityContextAfterRouteResolve
+     *  When set, authenticate() runs on every request AFTER route resolution
+     */
+    public static null|SecurityContext $securityContextAfterRouteResolve = null;
+
+    /**
      * @var Cors|null cors
      *  When set, handle() runs on every request before route resolution
      */
@@ -52,6 +59,12 @@ class Server extends LogEnabledClass
     public static array $beforeRequestHandlers = [];
 
     /**
+     * @var callable|null onRouteNotFoundHandler
+     *  Allows for custom handling of route not found
+     */
+    public static $onRouteNotFoundHandler = null;
+
+    /**
      * @var callable|null responseHandler
      *  Allows for custom response handling
      */
@@ -63,18 +76,70 @@ class Server extends LogEnabledClass
      */
     public static null|array $exceptionHandlers = [];
 
+    /**
+     * @var string requestMethod
+     */
     private string $requestMethod;
+
+    /**
+     * @var string requestURI
+     */
     private string $requestURI;
+
+    /**
+     * @var string pathPrefix
+     */
     private string $pathPrefix;
+
+    /**
+     * @var null|false|RouteInterface route
+     */
     private null|false|RouteInterface $route;
+
+    /**
+     * @var null|float requestStartTime
+     */
     private null|float $requestStartTime;
+
+    /**
+     * @var null|float requestEndTime
+     */
     private null|float $requestEndTime;
+
+    /**
+     * @var bool $requireHttps
+     */
     private bool $requireHttps;
+
+    /**
+     * @var bool $escapeResult
+     */
     private bool $escapeResult;
+
+    /**
+     * @var bool $addServerTime
+     */
     private bool $addServerTime;
+
+    /**
+     * @var bool $addRequestTime
+     */
     private bool $addRequestTime;
+
+    /**
+     * @var string $dateTimeFormat
+     */
     private string $dateTimeFormat;
+
+    /**
+     * @var string $routesFile
+     */
     private string $routesFile;
+
+    /**
+     * @var null|AuthenticationVerifier $authenticationVerifier
+     */
+    private null|AuthenticationVerifier $authenticationVerifier;
 
     /**
      * __construct
@@ -95,8 +160,25 @@ class Server extends LogEnabledClass
         $this->addRequestTime = array_key_exists("addRequestTime", $opts) ? boolval($opts["addRequestTime"]) : false;
         $this->dateTimeFormat = @$opts["dateTimeFormat"] ?? "ISO8601";
         $this->routesFile = @$opts["routesFile"] ?? self::$DEFAULT_ROUTES_FILE;
+        $this->authenticationVerifier = @$opts["authenticationVerifier"];
 
         $this->setLogOutput("file");
+    }
+
+    /**
+     * getAuthenticationVerifier
+     */
+    public function getAuthenticationVerifier()
+    {
+        return $this->authenticationVerifier;
+    }
+
+    /**
+     * setAuthenticationVerifier
+     */
+    public function setAuthenticationVerifier(AuthenticationVerifier $authenticationVerifier)
+    {
+        $this->authenticationVerifier = $authenticationVerifier;
     }
 
     /**
@@ -113,6 +195,14 @@ class Server extends LogEnabledClass
     public static function setResponseHandler(callable $handler) : void
     {
         self::$responseHandler = $handler;
+    }
+
+    /**
+     * setOnRouteNotFoundHandler
+     */
+    public static function setOnRouteNotFoundHandler(callable $handler) : void
+    {
+        self::$onRouteNotFoundHandler = $handler;
     }
 
     /**
@@ -392,7 +482,7 @@ class Server extends LogEnabledClass
     }
 
     /**
-     * convertObjects
+     * convertObject
      */
     private function convertObject(object $data)
     {
@@ -498,6 +588,9 @@ class Server extends LogEnabledClass
         // ExecuteBeforeRoute
         $route->executeBeforeRouteMethods();
 
+        // Execute security context first
+        self::$securityContextAfterRouteResolve?->authenticate($this);
+
         // Execute route
         $returnData = $controller->$methodName(...((new RouteMethodParamsFactory())->generateMethodParams($route)));
 
@@ -533,6 +626,14 @@ class Server extends LogEnabledClass
     }
 
     /**
+     * executeOnRouteNotFoundHandler
+     */
+    private function executeOnRouteNotFoundHandler() : void
+    {
+        $this->invokeHandler(self::$onRouteNotFoundHandler, [$this]);
+    }
+
+    /**
      * executeResponseHandler
      */
     private function executeResponseHandler(array $responseData) : void
@@ -541,7 +642,7 @@ class Server extends LogEnabledClass
     }
 
     /**
-     * getReturnContentType
+     * printReturnValue
      */
     private function printReturnValue(array $responseData)
     {
@@ -616,7 +717,16 @@ class Server extends LogEnabledClass
 
             // Not found
             if($this->route === false)
+            {
+                // Execute security context first
+                self::$securityContextAfterRouteResolve?->authenticate($this);
+
+                // Execute onRouteNotFoundHandler
+                $this->executeOnRouteNotFoundHandler();
+
+                // Route not found
                 throw new ResourceNotFoundException("routeNotFound", "Resource could not be found");
+            }
 
             // Execute route
             $responseData = $this->executeRoute($this->route);

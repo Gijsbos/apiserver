@@ -27,9 +27,13 @@ use gijsbos\Http\Exceptions\UnauthorizedException;
  */
 final class SecurityContext
 {
-    public function __construct(private array $rules = [])
-    {
+    private array $rules;
+    private bool $executed;
 
+    public function __construct()
+    {
+        $this->rules = [];
+        $this->executed = false;
     }
 
     public function permitAll(string ...$patterns) : static
@@ -64,6 +68,9 @@ final class SecurityContext
      */
     public function authenticate(Server $server) : void
     {
+        if($this->executed) // Prevent executing twice
+            return;
+
         if(!$this->requiresAuth($server->getRequestURI()))
             return;
 
@@ -72,7 +79,9 @@ final class SecurityContext
         if($credentials === null)
             throw new UnauthorizedException("authorizationRequired", "Authorization required");
 
-        new AuthenticationVerifier()->verify($credentials);
+        $server->getAuthenticationVerifier()?->verify($credentials);
+
+        $this->executed = true;
     }
 
     private function matches(string $pattern, string $path) : bool
