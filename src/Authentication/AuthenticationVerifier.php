@@ -23,9 +23,9 @@ class AuthenticationVerifier
     )
     { }
 
-    public function verify(#[\SensitiveParameter] AuthenticationCredentials $credentials)
+    public function verify(#[\SensitiveParameter] AuthenticationCredentials $credentials) : array
     {
-        match($credentials->scheme)
+        return match($credentials->scheme)
         {
             AuthenticationScheme::Basic => $this->verifyBasic($credentials),
             AuthenticationScheme::Bearer => $this->verifyBearer($credentials),
@@ -58,6 +58,8 @@ class AuthenticationVerifier
 
         if(!$verifyResult)
             throw new UnauthorizedException("credentialsInvalid", "Username or password is invalid");
+
+        return $verifyResult;
     }
 
     private function verifyBearer(#[\SensitiveParameter] AuthenticationCredentials $credentials)
@@ -71,5 +73,7 @@ class AuthenticationVerifier
 
         if(!$verifyResult)
             throw new UnauthorizedException("tokenInvalid", "Access token invalid");
+
+        return $verifyResult;
     }
 }
