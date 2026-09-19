@@ -13,6 +13,7 @@ use gijsbos\Http\Response;
 use gijsbos\ApiServer\Classes\RequestHeader;
 use gijsbos\ApiServer\Attributes\ReturnFilter;
 use gijsbos\ApiServer\Attributes\Route;
+use gijsbos\ApiServer\Authentication\AuthenticationResult;
 use gijsbos\ApiServer\Authentication\AuthenticationVerifier;
 use gijsbos\Http\Exceptions\HTTPRequestException;
 use gijsbos\Http\Exceptions\ResourceNotFoundException;
@@ -142,6 +143,11 @@ class Server extends LogEnabledClass
     private null|AuthenticationVerifier $authenticationVerifier;
 
     /**
+     * @var null|AuthenticationResult $authenticationResult
+     */
+    private null|AuthenticationResult $authenticationResult;
+
+    /**
      * __construct
      */
     public function __construct(array $opts = [])
@@ -161,6 +167,7 @@ class Server extends LogEnabledClass
         $this->dateTimeFormat = @$opts["dateTimeFormat"] ?? "ISO8601";
         $this->routesFile = @$opts["routesFile"] ?? self::$DEFAULT_ROUTES_FILE;
         $this->authenticationVerifier = @$opts["authenticationVerifier"];
+        $this->authenticationResult = null;
 
         $this->setLogOutput("file");
     }
@@ -179,6 +186,22 @@ class Server extends LogEnabledClass
     public function setAuthenticationVerifier(AuthenticationVerifier $authenticationVerifier)
     {
         $this->authenticationVerifier = $authenticationVerifier;
+    }
+
+    /**
+     * getAuthenticationResult
+     */
+    public function getAuthenticationResult()
+    {
+        return $this->authenticationResult;
+    }
+
+    /**
+     * setAuthenticationResult
+     */
+    public function setAuthenticationResult(AuthenticationResult $authenticationResult)
+    {
+        $this->authenticationResult = $authenticationResult;
     }
 
     /**

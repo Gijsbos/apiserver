@@ -85,13 +85,13 @@ final class SecurityContext
         if($credentials === null)
             throw new UnauthorizedException("authorizationRequired", "Authorization required");
 
-        $verifier = $server->getAuthenticationVerifier();
+        $authenticationVerifier = $server->getAuthenticationVerifier();
 
         // Nothing can vouch for the credential: deny rather than let any well-formed header through
-        if($verifier === null)
-            throw new InternalServerErrorException("authenticationNotConfigured", "This path requires authentication but no AuthenticationVerifier is configured; pass one as the 'authenticationVerifier' option to Server or call Server::setAuthenticationVerifier()");
+        if($authenticationVerifier === null)
+            throw new InternalServerErrorException("authenticationNotConfigured", "Path \"".$server->getRequestURI()."\" requires authentication but no AuthenticationVerifier is configured; pass one as the 'authenticationVerifier' option to Server or call Server::setAuthenticationVerifier()");
 
-        $verifier->verify($credentials);
+        $server->setAuthenticationResult($authenticationVerifier->verify($credentials));
 
         $this->executedFor = \WeakReference::create($server);
     }
