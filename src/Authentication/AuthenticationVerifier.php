@@ -23,7 +23,7 @@ class AuthenticationVerifier
     )
     { }
 
-    public function verify(#[\SensitiveParameter] AuthenticationCredentials $credentials) : array
+    public function verify(#[\SensitiveParameter] AuthenticationCredentials $credentials)
     {
         return match($credentials->scheme)
         {
