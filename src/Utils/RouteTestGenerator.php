@@ -258,7 +258,6 @@ PHP;
         
         foreach($requestParams as $paramName => $parameterData)
         {
-            $parameter = $parameterData["parameter"];
             $types = $parameterData["types"];
 
             switch(true)
@@ -295,7 +294,6 @@ PHP;
         
         foreach($requestHeaders as $paramName => $parameterData)
         {
-            $parameter = $parameterData["parameter"];
             $types = $parameterData["types"];
 
             switch(true)

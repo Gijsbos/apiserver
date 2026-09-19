@@ -365,7 +365,7 @@ class Route implements RouteInterface
      */
     public function executeBeforeRouteMethods() : array
     {
-        return array_map(fn($executeBeforeRoute) => $executeBeforeRoute->newInstance()->execute($this), array_filter($this->getReflectionClassMethod()->getAttributes(), fn($a) => is_subclass_of($a->getName(), ExecuteBeforeRoute::class)));
+        return array_map(fn($executeBeforeRoute) => $executeBeforeRoute->newInstance()->execute($this), array_filter($this->getReflectionClassMethod()->getAttributes(), fn($a) => is_a($a->getName(), ExecuteBeforeRoute::class, true)));
     }
 
     /**

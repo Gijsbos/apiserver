@@ -7,6 +7,7 @@ use gijsbos\ApiServer\Classes\PathVariable;
 use gijsbos\ApiServer\Attributes\PostRoute;
 use gijsbos\ApiServer\Attributes\Published;
 use gijsbos\ApiServer\Attributes\PutRoute;
+use gijsbos\ApiServer\Attributes\RequiresAuthority;
 use gijsbos\ApiServer\Classes\RequestHeader;
 use gijsbos\ApiServer\Classes\RequestParam;
 use gijsbos\ApiServer\Attributes\RequiresAuthorization;
@@ -87,7 +88,7 @@ class TestController extends RouteController
      */
     #[GetRoute('/test/authorized')]
     #[ReturnFilter(['token'])]
-    #[RequiresAuthorization()]
+    #[RequiresAuthority()]
     public function requiresAuthorization(
         RequestHeader|string $authorization = new RequestHeader(),
     )
@@ -102,7 +103,7 @@ class TestController extends RouteController
      */
     #[Published(false)]
     #[GetRoute('/test/not-published')]
-    #[RequiresAuthorization()]
+    #[RequiresAuthority()]
     public function notPublished(
         RequestHeader|string $authorization = new RequestHeader(),
     )

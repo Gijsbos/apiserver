@@ -28,14 +28,18 @@ use Override;
  *  a class name or a static method. Subclasses that call parent::__construct()
  *  at runtime (not through attribute syntax) aren't bound by that restriction.
  *
- *  #[RequiresAuthority(IsAdminCheck::class)]
+ *  $authority is handed to the check untouched, this attribute does not
+ *  interpret it (e.g. required roles or scopes). The check receives the Route
+ *  being executed as well, see AuthorityCheckInterface.
+ *
+ *  #[RequiresAuthority(IsAdminCheck::class, ['admin'])]
  *
  *  class IsAdminCheck implements AuthorityCheckInterface
  *  {
- *      public function execute() : void
+ *      public function execute(Route $route, array $authority)
  *      {
- *          if(!CurrentUser::isAdmin())
- *              throw new ForbiddenException('insufficient_authority', 'The "admin" role is required');
+ *          if(!CurrentUser::hasAllAuthorities($authority))
+ *              throw new ForbiddenException('insufficient_authority', 'Required authority: ' . implode(', ', $authority));
  *      }
  *  }
  */

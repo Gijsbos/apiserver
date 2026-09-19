@@ -3,7 +3,6 @@ declare(strict_types=1);
 
 namespace gijsbos\ApiServer\Authentication;
 
-use gijsbos\ApiServer\Server;
 use gijsbos\Http\Exceptions\UnauthorizedException;
 
 /**
@@ -24,9 +23,9 @@ class AuthenticationVerifier
     )
     { }
 
-    public function verify(#[\SensitiveParameter] AuthenticationCredentials $credentials) : mixed
+    public function verify(#[\SensitiveParameter] AuthenticationCredentials $credentials)
     {
-        return match($credentials->scheme)
+        match($credentials->scheme)
         {
             AuthenticationScheme::Basic => $this->verifyBasic($credentials),
             AuthenticationScheme::Bearer => $this->verifyBearer($credentials),
@@ -43,7 +42,7 @@ class AuthenticationVerifier
         return $this->viaBearer !== null;
     }
 
-    private function verifyBasic(#[\SensitiveParameter] AuthenticationCredentials $credentials): mixed
+    private function verifyBasic(#[\SensitiveParameter] AuthenticationCredentials $credentials)
     {
         $decoded = base64_decode($credentials->value, true);
 
@@ -59,11 +58,9 @@ class AuthenticationVerifier
 
         if(!$verifyResult)
             throw new UnauthorizedException("credentialsInvalid", "Username or password is invalid");
-
-        return $verifyResult;
     }
 
-    private function verifyBearer(#[\SensitiveParameter] AuthenticationCredentials $credentials): mixed
+    private function verifyBearer(#[\SensitiveParameter] AuthenticationCredentials $credentials)
     {
         $accessToken = $credentials->value;
 
@@ -74,7 +71,5 @@ class AuthenticationVerifier
 
         if(!$verifyResult)
             throw new UnauthorizedException("tokenInvalid", "Access token invalid");
-
-        return $verifyResult;
     }
 }

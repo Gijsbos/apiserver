@@ -284,6 +284,17 @@ class Server extends LogEnabledClass
         if(!isset($_SERVER["REQUEST_TIME_FLOAT"]))
             return null;
 
+        return $_SERVER["REQUEST_TIME_FLOAT"];
+    }
+
+    /**
+     * getRequestDuration
+     */
+    public function getRequestDuration() : null|float
+    {
+        if(!isset($_SERVER["REQUEST_TIME_FLOAT"]))
+            return null;
+
         return microtime(true) - $_SERVER["REQUEST_TIME_FLOAT"];
     }
 

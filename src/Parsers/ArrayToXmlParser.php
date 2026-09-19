@@ -33,8 +33,15 @@ class ArrayToXmlParser
 
                     foreach ($value as $v)
                     {
-                        $child = $container->addChild('item'); // repeated <item> for each entry
-                        $this->arrayToXml($v, $child);
+                        if(is_array($v))
+                        {
+                            $child = $container->addChild('item'); // repeated <item> for each entry
+                            $this->arrayToXml($v, $child);
+                        }
+                        else
+                        {
+                            $container->addChild('item', htmlspecialchars((string) $v));
+                        }
                     }
                 }
                 else

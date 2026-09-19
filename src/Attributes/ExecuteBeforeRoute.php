@@ -4,6 +4,7 @@ declare(strict_types=1);
 namespace gijsbos\ApiServer\Attributes;
 
 use Attribute;
+use LogicException;
 
 /**
  * ExecuteBeforeRoute
@@ -11,7 +12,7 @@ use Attribute;
 #[Attribute(Attribute::TARGET_METHOD)]
 class ExecuteBeforeRoute extends RouteAttribute
 {
-    public function __construct(private mixed $callback)
+    public function __construct(private mixed $callback = null)
     { }
 
     public function getCallback()
@@ -21,7 +22,12 @@ class ExecuteBeforeRoute extends RouteAttribute
 
     public function execute(Route $route)
     {
-        if(is_callable($callback = $this->callback))
-            $callback($route);
+        if($this->callback === null)
+            throw new LogicException("ExecuteBeforeRoute on " . $route->getClassMethod() . " has no callback set");
+
+        if(!is_callable($callback = $this->callback))
+            throw new LogicException("ExecuteBeforeRoute on " . $route->getClassMethod() . " has a callback that is not callable");
+
+        $callback($route);
     }
 }

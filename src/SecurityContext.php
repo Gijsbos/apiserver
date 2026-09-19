@@ -5,6 +5,7 @@ namespace gijsbos\ApiServer;
 
 use gijsbos\ApiServer\Authentication\AuthenticationHeaderParser;
 use gijsbos\ApiServer\Authentication\AuthenticationVerifier;
+use gijsbos\Http\Exceptions\InternalServerErrorException;
 use gijsbos\Http\Exceptions\UnauthorizedException;
 
 /**
@@ -15,9 +16,11 @@ use gijsbos\Http\Exceptions\UnauthorizedException;
  *
  *  How a required credential is actually verified is NOT this class's concern -
  *  authenticate() only decides whether to enforce it, then delegates to
- *  AuthenticationVerifier, which is configured separately (e.g. via
- *  AuthenticationVerifier::$viaBearer). That indirection is what keeps this
- *  class free of any OAuth2/JWT specifics.
+ *  AuthenticationVerifier, which is configured separately (e.g. its viaBearer
+ *  callback, passed to the Server). That indirection is what keeps this class
+ *  free of any OAuth2/JWT specifics. It also means a path that requires auth
+ *  fails closed (HTTP 500, a setup mistake rather than a client error) when a
+ *  credential is presented but the Server has no AuthenticationVerifier.
  *
  *  $securityContext = new SecurityContext()
  *      ->permitAll("/health", "/.well-known/**")
@@ -28,12 +31,12 @@ use gijsbos\Http\Exceptions\UnauthorizedException;
 final class SecurityContext
 {
     private array $rules;
-    private bool $executed;
+    private null|\WeakReference $executedFor;
 
     public function __construct()
     {
         $this->rules = [];
-        $this->executed = false;
+        $this->executedFor = null;
     }
 
     public function permitAll(string ...$patterns) : static
@@ -68,7 +71,10 @@ final class SecurityContext
      */
     public function authenticate(Server $server) : void
     {
-        if($this->executed) // Prevent executing twice
+        // Prevent executing twice for one request. Tracked per Server (one per request) rather than
+        // as a flag on this instance, because Server::$securityContext is static and would otherwise
+        // carry a previous request's success into every later request of a long-running worker.
+        if($this->executedFor?->get() === $server)
             return;
 
         if(!$this->requiresAuth($server->getRequestURI()))
@@ -79,9 +85,15 @@ final class SecurityContext
         if($credentials === null)
             throw new UnauthorizedException("authorizationRequired", "Authorization required");
 
-        $server->getAuthenticationVerifier()?->verify($credentials);
+        $verifier = $server->getAuthenticationVerifier();
 
-        $this->executed = true;
+        // Nothing can vouch for the credential: deny rather than let any well-formed header through
+        if($verifier === null)
+            throw new InternalServerErrorException("authenticationNotConfigured", "This path requires authentication but no AuthenticationVerifier is configured; pass one as the 'authenticationVerifier' option to Server or call Server::setAuthenticationVerifier()");
+
+        $verifier->verify($credentials);
+
+        $this->executedFor = \WeakReference::create($server);
     }
 
     private function matches(string $pattern, string $path) : bool

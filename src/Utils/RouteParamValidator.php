@@ -174,9 +174,10 @@ abstract class RouteParamValidator
         // Validate custom types
         else if(is_string($p->customType) && strlen($p->customType) > 0 && (is_string($p->value) || is_numeric($p->value)))
         {
-            $result = filter_var($p->value, self::getCustomTypeFilter($p->customType));
+            // FILTER_NULL_ON_FAILURE: failure is null, so valid values that parse to 0, 0.0 or false are accepted
+            $result = filter_var($p->value, self::getCustomTypeFilter($p->customType), FILTER_NULL_ON_FAILURE);
 
-            if($result == false)
+            if($result === null)
                 throw new BadRequestException($p->name."TypeInvalid", "Parameter '{$p->name}' is not of type '{$p->customType}'");
         }
 

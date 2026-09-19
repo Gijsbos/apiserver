@@ -3,7 +3,7 @@ declare(strict_types=1);
 
 namespace gijsbos\ApiServer\Parsers;
 
-use SimpleXMLElement;
+use gijsbos\Http\Exceptions\BadRequestException;
 
 /**
  * EnumRouteArgumentParser
