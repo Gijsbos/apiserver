@@ -6,6 +6,7 @@ namespace gijsbos\ApiServer\Attributes;
 use Attribute;
 use gijsbos\ApiServer\Interfaces\AuthorityCheckInterface;
 use InvalidArgumentException;
+use Override;
 
 /**
  * RequiresAuthority
@@ -31,7 +32,7 @@ use InvalidArgumentException;
  *
  *  class IsAdminCheck implements AuthorityCheckInterface
  *  {
- *      public function execute(Route $route) : void
+ *      public function execute() : void
  *      {
  *          if(!CurrentUser::isAdmin())
  *              throw new ForbiddenException('insufficient_authority', 'The "admin" role is required');
@@ -43,11 +44,12 @@ class RequiresAuthority extends ExecuteBeforeRoute
 {
     public function __construct(
         string|array|callable $check,
+        array $authority,
     )
     {
-        parent::__construct(function(Route $route) use ($check)
+        parent::__construct(function(Route $route) use ($check, $authority)
         {
-            self::resolveAuthorityCheck($check)->execute($route);
+            self::resolveAuthorityCheck($check)->execute($route, $authority);
         });
     }
 

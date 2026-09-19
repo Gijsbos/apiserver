@@ -17,5 +17,5 @@ use gijsbos\ApiServer\Attributes\Route;
  */
 interface AuthorityCheckInterface
 {
-    public function execute(Route $route) : void;
+    public function execute(Route $route, array $authority) : void;
 }
