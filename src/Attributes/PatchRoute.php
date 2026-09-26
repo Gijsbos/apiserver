@@ -5,9 +5,6 @@ namespace gijsbos\ApiServer\Attributes;
 
 use Attribute;
 
-/**
- * PatchRoute
- */
 #[Attribute(Attribute::TARGET_METHOD)]
 class PatchRoute extends Route
 {

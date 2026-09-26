@@ -1,13 +1,13 @@
 <?php
 declare(strict_types=1);
 
-namespace gijsbos\ApiServer\Authentication;
+namespace gijsbos\ApiServer\Authorization;
 
 use gijsbos\ApiServer\Classes\RequestHeader;
 use gijsbos\Http\Exceptions\UnauthorizedException;
 
 /**
- * AuthenticationHeaderParser
+ * AuthorizationHeaderParser
  *
  *  Note: Authorization headers are stripped by Apache for CGI/FastCGI SAPIs
  *  (RFC 3875 §4.1.18), not just "newer Apache". Fix with either:
@@ -16,17 +16,14 @@ use gijsbos\Http\Exceptions\UnauthorizedException;
  *      RewriteCond %{HTTP:Authorization} ^(.*)
  *      RewriteRule .* - [e=HTTP_AUTHORIZATION:%1]
  */
-class AuthenticationHeaderParser
+class AuthorizationHeaderParser
 {
-    public function __construct()
-    { }
-
     /**
      * parse
      *  Parses the Authorization header into its scheme and credentials.
      *  Returns null when no Authorization header is present.
      */
-    public function parse() : null | AuthenticationCredentials
+    public function parse() : null | AuthorizationCredentials
     {
         $authorization = RequestHeader::getHeader('authorization');
 
@@ -38,8 +35,8 @@ class AuthenticationHeaderParser
         if(!preg_match('/^(bearer|basic)\s+(\S+)\s*$/i', $authorization, $matches))
             throw new UnauthorizedException("authorizationHeaderInvalid", "Authorization header format invalid, expects \"Bearer <token>\" or \"Basic <credentials>\"");
 
-        $scheme = AuthenticationScheme::from(strtolower($matches[1]));
+        $scheme = AuthorizationScheme::from(strtolower($matches[1]));
 
-        return new AuthenticationCredentials($scheme, $matches[2]);
+        return new AuthorizationCredentials($scheme, $matches[2]);
     }
 }

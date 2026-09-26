@@ -5,9 +5,6 @@ namespace gijsbos\ApiServer\Attributes;
 
 use Attribute;
 
-/**
- * ExampleResponse
- */
 #[Attribute(Attribute::TARGET_METHOD)]
 class ExampleResponse extends DocsProperty
 {

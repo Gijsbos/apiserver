@@ -4,23 +4,22 @@ declare(strict_types=1);
 namespace gijsbos\ApiServer\Attributes;
 
 use Attribute;
-use gijsbos\ApiServer\Interfaces\AuthorityCheckInterface;
+use gijsbos\ApiServer\Interfaces\RouteAuthorityVerifierInterface;
 use InvalidArgumentException;
-use Override;
 
 /**
  * RequiresAuthority
- *  Runs a developer-supplied AuthorityCheckInterface before the route
+ *  Runs a developer-supplied RouteAuthorityVerifierInterface before the route
  *  resolves. execute() throws to deny (whatever exception/message fits)
  *  and returns normally to allow. This attribute is deliberately ignorant
  *  of what a check actually inspects (a token, a session, anything else) -
- *  that's entirely up to the AuthorityCheckInterface implementation.
+ *  that's entirely up to the RouteAuthorityVerifierInterface implementation.
  *
  *  $check accepts either:
- *   - a class name implementing AuthorityCheckInterface with a no-arg
+ *   - a class name implementing RouteAuthorityVerifierInterface with a no-arg
  *     constructor - instantiated directly, or
  *   - a callable (string "Class::method" or array [Class::class, 'method'])
- *     returning an AuthorityCheckInterface instance - use this when the
+ *     returning an RouteAuthorityVerifierInterface instance - use this when the
  *     check needs constructor arguments.
  *
  *  PHP attribute arguments must be compile-time constant expressions, so
@@ -30,11 +29,11 @@ use Override;
  *
  *  $authority is handed to the check untouched, this attribute does not
  *  interpret it (e.g. required roles or scopes). The check receives the Route
- *  being executed as well, see AuthorityCheckInterface.
+ *  being executed as well, see RouteAuthorityVerifierInterface.
  *
  *  #[RequiresAuthority(IsAdminCheck::class, ['admin'])]
  *
- *  class IsAdminCheck implements AuthorityCheckInterface
+ *  class IsAdminCheck implements RouteAuthorityVerifierInterface
  *  {
  *      public function execute(Route $route, array $authority)
  *      {
@@ -57,21 +56,21 @@ class RequiresAuthority extends ExecuteBeforeRoute
         });
     }
 
-    private static function resolveAuthorityCheck(string|array|callable $check) : AuthorityCheckInterface
+    private static function resolveAuthorityCheck(string|array|callable $check) : RouteAuthorityVerifierInterface
     {
-        if(is_string($check) && class_exists($check) && is_a($check, AuthorityCheckInterface::class, true))
+        if(is_string($check) && class_exists($check) && is_a($check, RouteAuthorityVerifierInterface::class, true))
             return new $check();
 
         if(is_callable($check))
         {
             $resolved = $check();
 
-            if($resolved instanceof AuthorityCheckInterface)
+            if($resolved instanceof RouteAuthorityVerifierInterface)
                 return $resolved;
 
-            throw new InvalidArgumentException("The callable passed to RequiresAuthority must return an object implementing AuthorityCheckInterface");
+            throw new InvalidArgumentException("The callable passed to RequiresAuthority must return an object implementing RouteAuthorityVerifierInterface");
         }
 
-        throw new InvalidArgumentException("RequiresAuthority expects a class name implementing AuthorityCheckInterface, or a callable returning one");
+        throw new InvalidArgumentException("RequiresAuthority expects a class name implementing RouteAuthorityVerifierInterface, or a callable returning one");
     }
 }

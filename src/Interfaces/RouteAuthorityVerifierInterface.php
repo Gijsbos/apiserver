@@ -6,7 +6,7 @@ namespace gijsbos\ApiServer\Interfaces;
 use gijsbos\ApiServer\Attributes\Route;
 
 /**
- * AuthorityCheckInterface
+ * RouteAuthorityVerifierInterface
  *  Implemented by anything that decides whether the current request is
  *  authorized. execute() throws to deny (any exception, whatever message
  *  fits) and returns normally to allow. $route is core routing plumbing
@@ -15,7 +15,7 @@ use gijsbos\ApiServer\Attributes\Route;
  *  inspects (a token, a session, anything else); the implementation is
  *  responsible for looking up whatever it needs itself.
  */
-interface AuthorityCheckInterface
+interface RouteAuthorityVerifierInterface
 {
     public function execute(Route $route, array $authority);
 }

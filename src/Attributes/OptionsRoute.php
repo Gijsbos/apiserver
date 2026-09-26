@@ -5,9 +5,6 @@ namespace gijsbos\ApiServer\Attributes;
 
 use Attribute;
 
-/**
- * OptionsRoute
- */
 #[Attribute(Attribute::TARGET_METHOD)]
 class OptionsRoute extends Route
 {

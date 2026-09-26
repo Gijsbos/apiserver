@@ -5,9 +5,6 @@ namespace gijsbos\ApiServer\Attributes;
 
 use Attribute;
 
-/**
- * DeleteRoute
- */
 #[Attribute(Attribute::TARGET_METHOD)]
 class DeleteRoute extends Route
 {

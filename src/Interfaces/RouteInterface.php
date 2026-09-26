@@ -15,7 +15,7 @@ interface RouteInterface
     public function setStatusCode(int $statusCode);
     public function getPathPattern() : string;
     public function getPathVariableNames(): array;
-    public function getPathVariables();
+    public function getPathVariables(?string $key = null);
     public function setPathVariables(array $pathVariables): void;
     public function setAttributes(array $attributes) : void;
     public function getAttributes(?string $name = null);
@@ -34,7 +34,7 @@ interface RouteInterface
     public function setClassName(string $className) : void;
     public function getMethodName() : null|string;
     public function setMethodName(string $methodName) : void;
+    public function getClassMethod() : string;
     public function getReflectionClassMethod() : ReflectionMethod;
     public function executeBeforeRouteMethods() : array;
-    public function parsePathData(array $params = []) : array;
 }

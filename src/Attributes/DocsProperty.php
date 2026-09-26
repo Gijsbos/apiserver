@@ -5,9 +5,6 @@ namespace gijsbos\ApiServer\Attributes;
 
 use Attribute;
 
-/**
- * DocsProperty
- */
 #[Attribute(Attribute::TARGET_METHOD)]
 class DocsProperty extends RouteAttribute
 {

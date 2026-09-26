@@ -6,15 +6,13 @@ namespace gijsbos\ApiServer;
 use Exception;
 use RuntimeException;
 use Throwable;
-use TypeError;
 use UnexpectedValueException;
 
 use gijsbos\Http\Response;
 use gijsbos\ApiServer\Classes\RequestHeader;
 use gijsbos\ApiServer\Attributes\ReturnFilter;
 use gijsbos\ApiServer\Attributes\Route;
-use gijsbos\ApiServer\Authentication\AuthenticationResult;
-use gijsbos\ApiServer\Authentication\AuthenticationVerifier;
+use gijsbos\ApiServer\Interfaces\AuthorizationHeaderVerifierInterface;
 use gijsbos\Http\Exceptions\HTTPRequestException;
 use gijsbos\Http\Exceptions\ResourceNotFoundException;
 use gijsbos\Http\Exceptions\UpgradeRequiredException;
@@ -75,7 +73,7 @@ class Server extends LogEnabledClass
      * @var array exceptionHandlers
      *  Allows for custom exception handling
      */
-    public static null|array $exceptionHandlers = [];
+    public static array $exceptionHandlers = [];
 
     /**
      * @var string requestMethod
@@ -138,14 +136,14 @@ class Server extends LogEnabledClass
     private string $routesFile;
 
     /**
-     * @var null|AuthenticationVerifier $authenticationVerifier
+     * @var null|AuthorizationHeaderVerifierInterface $authorizationHeaderVerifier
      */
-    private null|AuthenticationVerifier $authenticationVerifier;
+    private null|AuthorizationHeaderVerifierInterface $authorizationHeaderVerifier;
 
     /**
-     * @var null|AuthenticationResult $authenticationResult
+     * @var null|array $authorizationResult
      */
-    private null|AuthenticationResult $authenticationResult;
+    private null|array $authorizationResult;
 
     /**
      * __construct
@@ -166,42 +164,42 @@ class Server extends LogEnabledClass
         $this->addRequestTime = array_key_exists("addRequestTime", $opts) ? boolval($opts["addRequestTime"]) : false;
         $this->dateTimeFormat = @$opts["dateTimeFormat"] ?? "ISO8601";
         $this->routesFile = @$opts["routesFile"] ?? self::$DEFAULT_ROUTES_FILE;
-        $this->authenticationVerifier = @$opts["authenticationVerifier"];
-        $this->authenticationResult = null;
+        $this->authorizationHeaderVerifier = @$opts["authorizationHeaderVerifier"];
+        $this->authorizationResult = null;
 
         $this->setLogOutput("file");
     }
 
     /**
-     * getAuthenticationVerifier
+     * getAuthorizationHeaderVerifier
      */
-    public function getAuthenticationVerifier()
+    public function getAuthorizationHeaderVerifier() : null|AuthorizationHeaderVerifierInterface
     {
-        return $this->authenticationVerifier;
+        return $this->authorizationHeaderVerifier;
     }
 
     /**
-     * setAuthenticationVerifier
+     * setAuthorizationHeaderVerifier
      */
-    public function setAuthenticationVerifier(AuthenticationVerifier $authenticationVerifier)
+    public function setAuthorizationHeaderVerifier(AuthorizationHeaderVerifierInterface $authorizationHeaderVerifier)
     {
-        $this->authenticationVerifier = $authenticationVerifier;
+        $this->authorizationHeaderVerifier = $authorizationHeaderVerifier;
     }
 
     /**
-     * getAuthenticationResult
+     * getAuthorizationResult
      */
-    public function getAuthenticationResult()
+    public function getAuthorizationResult() : null|array
     {
-        return $this->authenticationResult;
+        return $this->authorizationResult;
     }
 
     /**
-     * setAuthenticationResult
+     * setAuthorizationResult
      */
-    public function setAuthenticationResult(AuthenticationResult $authenticationResult)
+    public function setAuthorizationResult(array $authorizationResult)
     {
-        $this->authenticationResult = $authenticationResult;
+        $this->authorizationResult = $authorizationResult;
     }
 
     /**
@@ -622,7 +620,8 @@ class Server extends LogEnabledClass
         // ExecuteBeforeRoute
         $route->executeBeforeRouteMethods();
 
-        // Execute security context first
+        // Execute the security context after the before route methods: they can configure how the request is verified
+        // (e.g. set the AuthorizationHeaderVerifier with the authority of the route)
         self::$securityContextAfterRouteResolve?->authenticate($this);
 
         // Execute route
@@ -796,7 +795,7 @@ class Server extends LogEnabledClass
                 log_error($ex->getTraceAsString());
             }
         }
-        catch(RuntimeException | Exception | TypeError | Throwable $ex)
+        catch(Throwable $ex)
         {
             $customException = $this->applyExceptionHandlers($ex);
 
@@ -827,10 +826,13 @@ class Server extends LogEnabledClass
             }
             else
             {
+                // An unexpected error can carry internals (SQL, file paths), in production they are only logged (above)
+                $production = \gijsbos\ExtFuncs\Utils\Environment::isProduction();
+
                 http_response_code(500);
                 print(json_encode([
-                    "error" => get_class($ex),
-                    "errorDescription" => $ex->getMessage(),
+                    "error" => $production ? "internalError" : get_class($ex),
+                    "errorDescription" => $production ? "An internal error occurred" : $ex->getMessage(),
                     "statusCode" => 500,
                 ]));
                 return;

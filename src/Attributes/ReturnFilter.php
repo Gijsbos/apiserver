@@ -4,14 +4,10 @@ declare(strict_types=1);
 namespace gijsbos\ApiServer\Attributes;
 
 use Attribute;
-use Exception;
 use InvalidArgumentException;
 use ReflectionClass;
 use ReflectionProperty;
 
-/**
- * ReturnFilter
- */
 #[Attribute(Attribute::TARGET_METHOD)]
 class ReturnFilter extends RouteAttribute
 {
@@ -145,7 +141,8 @@ class ReturnFilter extends RouteAttribute
                     }
                     else
                     {
-                        if(class_exists($propertyName))
+                        // Exact case only, class_exists is case insensitive: a key such as "error" is not the class Error
+                        if(class_exists($propertyName) && (new \ReflectionClass($propertyName))->getName() === ltrim($propertyName, "\\"))
                         {
                             $classPropertyNames = $this->getClassPropertyNames($propertyName);
 
@@ -238,48 +235,13 @@ class ReturnFilter extends RouteAttribute
                     $filterBehaviour = "exclude";
                 }
 
-                // Filter is set and represents the actual filter key that can be used to filter out stuff from data
-                if($filterKey !== null)
-                {
-                    if($filterType == "string")
-                    {
-                        if($filterBehaviour == "include")
-                        {
-                            $data[$key] = $data[$key]; // Retains the WHOLE assoc array, since filterType is 'string'
-                        }
-                        else
-                        {
-                            unset($data[$key]); // Exclude
-                        }
-                    }
-                    else if($filterType == "array")
-                    {
-                        if(is_array($value))
-                        {
-                            if($filterBehaviour == "include")
-                            {
-                                $data[$key] = $this->applyFilter($data[$key], $filter[$filterKey]); // Retains the WHOLE assoc array, since filterType is 'string'   
-                            }
-                            else
-                            {
-                                unset($data[$key]); // Exclude
-                            }
-                        }
-                        else
-                        {
-                            if($filterBehaviour == "include")
-                            {
-                                $data[$key] = $data[$key]; // Retains the WHOLE assoc array, since filterType is 'string'
-                            }
-                            else
-                            {
-                                unset($data[$key]); // Exclude
-                            }
-                        }
-                    }
-                    else 
-                        throw new Exception("Invalid filter type value $filterType");
-                }
+                // Exclude removes the key, include keeps the value as-is ('string' filter or non-array value)
+                if($filterBehaviour == "exclude")
+                    unset($data[$key]);
+
+                // Include with a nested filter: apply it one level deeper
+                else if($filterType == "array" && is_array($value))
+                    $data[$key] = $this->applyFilter($data[$key], $filter[$filterKey]);
             }
         }
 

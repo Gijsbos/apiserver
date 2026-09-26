@@ -5,7 +5,7 @@ namespace gijsbos\ApiServer;
 
 use PHPUnit\Framework\TestCase;
 use RuntimeException;
-use gijsbos\ApiServer\Authentication\AuthenticationVerifier;
+use gijsbos\ApiServer\Authorization\AuthorizationHeaderVerifier;
 use gijsbos\Http\Exceptions\ForbiddenException;
 use gijsbos\Http\Exceptions\UnauthorizedException;
 
@@ -422,9 +422,9 @@ final class ServerBehaviorTest extends TestCase
 
     // ---- security context ----
 
-    private function bearerVerifier() : AuthenticationVerifier
+    private function bearerVerifier() : AuthorizationHeaderVerifier
     {
-        return new AuthenticationVerifier(viaBearer: fn($token) => $token === "good");
+        return new AuthorizationHeaderVerifier(viaBearer: fn($token) => $token === "good");
     }
 
     public function testPermittedPathsSkipAuthentication()
@@ -449,7 +449,7 @@ final class ServerBehaviorTest extends TestCase
     {
         Server::$securityContext = new SecurityContext();
 
-        $r = $this->dispatch("GET", "/account/abc/", ["Authorization" => "Bearer good"], ["authenticationVerifier" => $this->bearerVerifier()]);
+        $r = $this->dispatch("GET", "/account/abc/", ["Authorization" => "Bearer good"], ["authorizationHeaderVerifier" => $this->bearerVerifier()]);
 
         $this->assertSame(["result" => "testRoute8"], $r["result"]);
     }
@@ -458,7 +458,7 @@ final class ServerBehaviorTest extends TestCase
     {
         Server::$securityContext = new SecurityContext();
 
-        $r = $this->dispatch("GET", "/account/abc/", ["Authorization" => "Bearer bad"], ["authenticationVerifier" => $this->bearerVerifier()]);
+        $r = $this->dispatch("GET", "/account/abc/", ["Authorization" => "Bearer bad"], ["authorizationHeaderVerifier" => $this->bearerVerifier()]);
 
         $this->assertSame(401, $r["status"]);
         $this->assertSame("tokenInvalid", $r["json"]["error"]);
@@ -485,17 +485,17 @@ final class ServerBehaviorTest extends TestCase
         $this->assertSame(401, $r["status"]);
     }
 
-    public function testAuthenticationVerifierCanBeSetAfterConstruction()
+    public function testAuthorizationHeaderVerifierCanBeSetAfterConstruction()
     {
         Server::simulateRequest("GET", "/foo/hi");
         $server = new Server();
 
-        $this->assertNull($server->getAuthenticationVerifier());
+        $this->assertNull($server->getAuthorizationHeaderVerifier());
 
         $verifier = $this->bearerVerifier();
-        $server->setAuthenticationVerifier($verifier);
+        $server->setAuthorizationHeaderVerifier($verifier);
 
-        $this->assertSame($verifier, $server->getAuthenticationVerifier());
+        $this->assertSame($verifier, $server->getAuthorizationHeaderVerifier());
     }
 
     // ---- authority ----

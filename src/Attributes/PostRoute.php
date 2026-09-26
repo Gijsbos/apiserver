@@ -5,9 +5,6 @@ namespace gijsbos\ApiServer\Attributes;
 
 use Attribute;
 
-/**
- * PostRoute
- */
 #[Attribute(Attribute::TARGET_METHOD)]
 class PostRoute extends Route
 {

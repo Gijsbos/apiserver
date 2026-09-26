@@ -5,11 +5,11 @@ namespace gijsbos\ApiServer;
 
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
-use gijsbos\ApiServer\Authentication\AuthenticationHeaderParser;
-use gijsbos\ApiServer\Authentication\AuthenticationScheme;
+use gijsbos\ApiServer\Authorization\AuthorizationHeaderParser;
+use gijsbos\ApiServer\Authorization\AuthorizationScheme;
 use gijsbos\Http\Exceptions\UnauthorizedException;
 
-final class AuthenticationHeaderParserTest extends TestCase
+final class AuthorizationHeaderParserTest extends TestCase
 {
     use IsolatesGlobalState;
 
@@ -18,7 +18,7 @@ final class AuthenticationHeaderParserTest extends TestCase
         if($header !== null)
             $_SERVER["HTTP_AUTHORIZATION"] = $header;
 
-        return (new AuthenticationHeaderParser())->parse();
+        return (new AuthorizationHeaderParser())->parse();
     }
 
     public function testReturnsNullWhenHeaderIsMissing()
@@ -35,7 +35,7 @@ final class AuthenticationHeaderParserTest extends TestCase
     {
         $credentials = $this->parse("Bearer abc.def.ghi");
 
-        $this->assertSame(AuthenticationScheme::Bearer, $credentials->scheme);
+        $this->assertSame(AuthorizationScheme::Bearer, $credentials->scheme);
         $this->assertSame("abc.def.ghi", $credentials->value);
     }
 
@@ -43,7 +43,7 @@ final class AuthenticationHeaderParserTest extends TestCase
     {
         $credentials = $this->parse("Basic dXNlcjpwYXNz");
 
-        $this->assertSame(AuthenticationScheme::Basic, $credentials->scheme);
+        $this->assertSame(AuthorizationScheme::Basic, $credentials->scheme);
         $this->assertSame("dXNlcjpwYXNz", $credentials->value);
     }
 
@@ -51,7 +51,7 @@ final class AuthenticationHeaderParserTest extends TestCase
     {
         $credentials = $this->parse("BeArEr AbCdEf");
 
-        $this->assertSame(AuthenticationScheme::Bearer, $credentials->scheme);
+        $this->assertSame(AuthorizationScheme::Bearer, $credentials->scheme);
         $this->assertSame("AbCdEf", $credentials->value);
     }
 
@@ -59,7 +59,7 @@ final class AuthenticationHeaderParserTest extends TestCase
     {
         $credentials = $this->parse("  Bearer   token123  ");
 
-        $this->assertSame(AuthenticationScheme::Bearer, $credentials->scheme);
+        $this->assertSame(AuthorizationScheme::Bearer, $credentials->scheme);
         $this->assertSame("token123", $credentials->value);
     }
 
@@ -68,7 +68,7 @@ final class AuthenticationHeaderParserTest extends TestCase
         // Apache CGI/FastCGI workaround exposes the header as REDIRECT_HTTP_AUTHORIZATION
         $_SERVER["REDIRECT_HTTP_AUTHORIZATION"] = "Bearer viaRedirect";
 
-        $credentials = (new AuthenticationHeaderParser())->parse();
+        $credentials = (new AuthorizationHeaderParser())->parse();
 
         $this->assertSame("viaRedirect", $credentials->value);
     }

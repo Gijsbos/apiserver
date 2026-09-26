@@ -5,9 +5,6 @@ namespace gijsbos\ApiServer\Attributes;
 
 use Attribute;
 
-/**
- * Docs
- */
 #[Attribute(Attribute::TARGET_ALL)]
 class Docs extends DocsProperty
 {

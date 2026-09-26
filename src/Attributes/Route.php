@@ -5,13 +5,11 @@ namespace gijsbos\ApiServer\Attributes;
 
 use Attribute;
 use ReflectionMethod;
+
 use gijsbos\ApiServer\Interfaces\RouteInterface;
 use gijsbos\ApiServer\Interfaces\RouteParamInterface;
 use gijsbos\ApiServer\Server;
 
-/**
- * Route
- */
 #[Attribute(Attribute::TARGET_METHOD)]
 class Route implements RouteInterface
 {
@@ -371,7 +369,7 @@ class Route implements RouteInterface
     /**
      * parsePathData
      */
-    public function parsePathData(array $params = []) : array
+    private function parsePathData() : array
     {
         $resourceURL = str_replace("/", "\/", $this->path);
         $pathVariableNames = [];
@@ -383,18 +381,11 @@ class Route implements RouteInterface
         foreach($matches as $details)
         {
             $match = $details[0];
-            $dataType = $details[1];
             $variableName = $details[2];
 
             $resourceURL = str_replace($match, "(.+?(?=\/|$))", $resourceURL);
 
             $pathVariableNames[] = $variableName;
-
-            if(array_key_exists($variableName, $params))
-            {
-                $value = $params[$variableName];
-                $resourceURL = str_replace($match, $value, $this->path);
-            }
         }
 
         return [

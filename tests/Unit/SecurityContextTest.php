@@ -4,7 +4,7 @@ declare(strict_types=1);
 namespace gijsbos\ApiServer;
 
 use PHPUnit\Framework\TestCase;
-use gijsbos\ApiServer\Authentication\AuthenticationVerifier;
+use gijsbos\ApiServer\Authorization\AuthorizationHeaderVerifier;
 use gijsbos\Http\Exceptions\InternalServerErrorException;
 use gijsbos\Http\Exceptions\UnauthorizedException;
 
@@ -19,9 +19,9 @@ final class SecurityContextTest extends TestCase
         return new Server($opts);
     }
 
-    private function acceptingVerifier() : AuthenticationVerifier
+    private function acceptingVerifier() : AuthorizationHeaderVerifier
     {
-        return new AuthenticationVerifier(viaBearer: fn($token) => $token === "good");
+        return new AuthorizationHeaderVerifier(viaBearer: fn($token) => $token === "good");
     }
 
     // ---- requiresAuth (rule matching) ----
@@ -126,7 +126,7 @@ final class SecurityContextTest extends TestCase
     {
         $_SERVER["HTTP_AUTHORIZATION"] = "Bearer good";
 
-        $server = $this->serverFor("/user/me", ["authenticationVerifier" => $this->acceptingVerifier()]);
+        $server = $this->serverFor("/user/me", ["authorizationHeaderVerifier" => $this->acceptingVerifier()]);
 
         (new SecurityContext())->authenticate($server);
 
@@ -137,7 +137,7 @@ final class SecurityContextTest extends TestCase
     {
         $_SERVER["HTTP_AUTHORIZATION"] = "Bearer bad";
 
-        $server = $this->serverFor("/user/me", ["authenticationVerifier" => $this->acceptingVerifier()]);
+        $server = $this->serverFor("/user/me", ["authorizationHeaderVerifier" => $this->acceptingVerifier()]);
 
         $this->assertHttpError(UnauthorizedException::class, "tokenInvalid", fn() => (new SecurityContext())->authenticate($server));
     }
@@ -146,7 +146,7 @@ final class SecurityContextTest extends TestCase
     {
         $_SERVER["HTTP_AUTHORIZATION"] = "Digest nope";
 
-        $server = $this->serverFor("/user/me", ["authenticationVerifier" => $this->acceptingVerifier()]);
+        $server = $this->serverFor("/user/me", ["authorizationHeaderVerifier" => $this->acceptingVerifier()]);
 
         $this->assertHttpError(UnauthorizedException::class, "authorizationHeaderInvalid", fn() => (new SecurityContext())->authenticate($server));
     }
@@ -156,13 +156,13 @@ final class SecurityContextTest extends TestCase
         // The same context can be registered for both before- and after-route-resolution;
         // the "executed" flag stops the verifier running twice for one request.
         $calls = 0;
-        $verifier = new AuthenticationVerifier(viaBearer: function() use (&$calls) {
+        $verifier = new AuthorizationHeaderVerifier(viaBearer: function() use (&$calls) {
             $calls++;
             return true;
         });
 
         $_SERVER["HTTP_AUTHORIZATION"] = "Bearer good";
-        $server = $this->serverFor("/user/me", ["authenticationVerifier" => $verifier]);
+        $server = $this->serverFor("/user/me", ["authorizationHeaderVerifier" => $verifier]);
 
         $context = new SecurityContext();
         $context->authenticate($server);
@@ -178,10 +178,10 @@ final class SecurityContextTest extends TestCase
         $context = new SecurityContext();
 
         $_SERVER["HTTP_AUTHORIZATION"] = "Bearer good";
-        $context->authenticate($this->serverFor("/user/me", ["authenticationVerifier" => $this->acceptingVerifier()]));
+        $context->authenticate($this->serverFor("/user/me", ["authorizationHeaderVerifier" => $this->acceptingVerifier()]));
 
         unset($_SERVER["HTTP_AUTHORIZATION"]);
-        $secondRequest = $this->serverFor("/user/me", ["authenticationVerifier" => $this->acceptingVerifier()]);
+        $secondRequest = $this->serverFor("/user/me", ["authorizationHeaderVerifier" => $this->acceptingVerifier()]);
 
         $this->assertHttpError(UnauthorizedException::class, "authorizationRequired", fn() => $context->authenticate($secondRequest));
     }
@@ -210,7 +210,7 @@ final class SecurityContextTest extends TestCase
         $e = $this->assertHttpError(InternalServerErrorException::class, "authenticationNotConfigured", fn() => $context->authenticate($server));
 
         $this->assertSame(500, $e->getStatusCode());
-        $this->assertStringContainsString("AuthenticationVerifier", $e->getErrorDescription());
+        $this->assertStringContainsString("AuthorizationHeaderVerifier", $e->getErrorDescription());
     }
 
     public function testMissingCredentialsAreStillA401EvenWithoutAVerifier()

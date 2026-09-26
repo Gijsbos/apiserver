@@ -5,9 +5,6 @@ namespace gijsbos\ApiServer\Attributes;
 
 use Attribute;
 
-/**
- * GetRoute
- */
 #[Attribute(Attribute::TARGET_METHOD)]
 class GetRoute extends Route
 {

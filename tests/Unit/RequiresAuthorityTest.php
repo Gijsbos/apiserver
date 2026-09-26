@@ -100,7 +100,7 @@ final class RequiresAuthorityTest extends TestCase
         $attribute = new RequiresAuthority([\TestAuthorityCheckFactory::class, "makeInvalid"], ["admin"]);
 
         $this->expectException(InvalidArgumentException::class);
-        $this->expectExceptionMessage("must return an object implementing AuthorityCheckInterface");
+        $this->expectExceptionMessage("must return an object implementing RouteAuthorityVerifierInterface");
 
         $attribute->execute($this->route());
     }
@@ -119,7 +119,7 @@ final class RequiresAuthorityTest extends TestCase
         $attribute = new RequiresAuthority(\stdClass::class, ["admin"]);
 
         $this->expectException(InvalidArgumentException::class);
-        $this->expectExceptionMessage("expects a class name implementing AuthorityCheckInterface");
+        $this->expectExceptionMessage("expects a class name implementing RouteAuthorityVerifierInterface");
 
         $attribute->execute($this->route());
     }

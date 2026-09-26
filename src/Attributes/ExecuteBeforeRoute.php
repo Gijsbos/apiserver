@@ -6,9 +6,6 @@ namespace gijsbos\ApiServer\Attributes;
 use Attribute;
 use LogicException;
 
-/**
- * ExecuteBeforeRoute
- */
 #[Attribute(Attribute::TARGET_METHOD)]
 class ExecuteBeforeRoute extends RouteAttribute
 {

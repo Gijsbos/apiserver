@@ -5,9 +5,6 @@ namespace gijsbos\ApiServer\Attributes;
 
 use Attribute;
 
-/**
- * Published
- */
 #[Attribute(Attribute::TARGET_METHOD)]
 class Published
 {

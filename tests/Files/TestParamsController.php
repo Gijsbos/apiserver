@@ -13,7 +13,7 @@ use gijsbos\ApiServer\Classes\OptRequestParam;
 use gijsbos\ApiServer\Classes\PathVariable;
 use gijsbos\ApiServer\Classes\RequestHeader;
 use gijsbos\ApiServer\Classes\RequestParam;
-use gijsbos\ApiServer\Interfaces\AuthorityCheckInterface;
+use gijsbos\ApiServer\Interfaces\RouteAuthorityVerifierInterface;
 use gijsbos\ApiServer\RouteController;
 use gijsbos\ExtFuncs\Attributes\RegExp;
 use gijsbos\Http\Exceptions\ForbiddenException;
@@ -72,7 +72,7 @@ class TestPatternFixture
 /**
  * Records every authority list it is asked to check, and stashes it on the route.
  */
-class TestAllowAuthorityCheck implements AuthorityCheckInterface
+class TestAllowAuthorityCheck implements RouteAuthorityVerifierInterface
 {
     public static array $calls = [];
 
@@ -84,7 +84,7 @@ class TestAllowAuthorityCheck implements AuthorityCheckInterface
     }
 }
 
-class TestDenyAuthorityCheck implements AuthorityCheckInterface
+class TestDenyAuthorityCheck implements RouteAuthorityVerifierInterface
 {
     public function execute(Route $route, array $authority)
     {
@@ -94,7 +94,7 @@ class TestDenyAuthorityCheck implements AuthorityCheckInterface
 
 class TestAuthorityCheckFactory
 {
-    public static function make() : AuthorityCheckInterface
+    public static function make() : RouteAuthorityVerifierInterface
     {
         return new TestAllowAuthorityCheck();
     }
@@ -106,8 +106,8 @@ class TestAuthorityCheckFactory
 }
 
 /**
- * Route::executeBeforeRouteMethods() only runs *subclasses* of ExecuteBeforeRoute
- * (as RequiresAuthority is), so the fixture records through one.
+ * Records every route it runs for, through a subclass of ExecuteBeforeRoute
+ * (as RequiresAuthority is).
  */
 #[Attribute(Attribute::TARGET_METHOD)]
 class TestRecordingBeforeRoute extends ExecuteBeforeRoute

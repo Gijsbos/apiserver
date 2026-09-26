@@ -3,8 +3,7 @@ declare(strict_types=1);
 
 namespace gijsbos\ApiServer;
 
-use gijsbos\ApiServer\Authentication\AuthenticationHeaderParser;
-use gijsbos\ApiServer\Authentication\AuthenticationVerifier;
+use gijsbos\ApiServer\Authorization\AuthorizationHeaderParser;
 use gijsbos\Http\Exceptions\InternalServerErrorException;
 use gijsbos\Http\Exceptions\UnauthorizedException;
 
@@ -16,11 +15,11 @@ use gijsbos\Http\Exceptions\UnauthorizedException;
  *
  *  How a required credential is actually verified is NOT this class's concern -
  *  authenticate() only decides whether to enforce it, then delegates to
- *  AuthenticationVerifier, which is configured separately (e.g. its viaBearer
+ *  AuthorizationHeaderVerifier, which is configured separately (e.g. its viaBearer
  *  callback, passed to the Server). That indirection is what keeps this class
  *  free of any OAuth2/JWT specifics. It also means a path that requires auth
  *  fails closed (HTTP 500, a setup mistake rather than a client error) when a
- *  credential is presented but the Server has no AuthenticationVerifier.
+ *  credential is presented but the Server has no AuthorizationHeaderVerifier.
  *
  *  $securityContext = new SecurityContext()
  *      ->permitAll("/health", "/.well-known/**")
@@ -80,18 +79,18 @@ final class SecurityContext
         if(!$this->requiresAuth($server->getRequestURI()))
             return;
 
-        $credentials = new AuthenticationHeaderParser()->parse();
+        $credentials = new AuthorizationHeaderParser()->parse();
 
         if($credentials === null)
             throw new UnauthorizedException("authorizationRequired", "Authorization required");
 
-        $authenticationVerifier = $server->getAuthenticationVerifier();
+        $authorizationHeaderVerifier = $server->getAuthorizationHeaderVerifier();
 
         // Nothing can vouch for the credential: deny rather than let any well-formed header through
-        if($authenticationVerifier === null)
-            throw new InternalServerErrorException("authenticationNotConfigured", "Path \"".$server->getRequestURI()."\" requires authentication but no AuthenticationVerifier is configured; pass one as the 'authenticationVerifier' option to Server or call Server::setAuthenticationVerifier()");
+        if($authorizationHeaderVerifier === null)
+            throw new InternalServerErrorException("authenticationNotConfigured", "Path \"".$server->getRequestURI()."\" requires authentication but no AuthorizationHeaderVerifier is configured; pass one as the 'authorizationHeaderVerifier' option to Server or call Server::setAuthorizationHeaderVerifier()");
 
-        $server->setAuthenticationResult($authenticationVerifier->verify($credentials));
+        $server->setAuthorizationResult($authorizationHeaderVerifier->verify($credentials));
 
         $this->executedFor = \WeakReference::create($server);
     }

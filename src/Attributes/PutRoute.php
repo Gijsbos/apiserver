@@ -5,9 +5,6 @@ namespace gijsbos\ApiServer\Attributes;
 
 use Attribute;
 
-/**
- * PutRoute
- */
 #[Attribute(Attribute::TARGET_METHOD)]
 class PutRoute extends Route
 {
