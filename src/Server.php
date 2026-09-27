@@ -823,6 +823,9 @@ class Server extends LogEnabledClass
      */
     private function sendResponseHeaders() : void
     {
+        // Set by PHP when expose_php is on, it reveals the PHP version (banner grabbing)
+        header_remove("X-Powered-By");
+
         foreach($this->getResponseHeaders() as $name => $value)
             header("$name: $value");
     }
@@ -1023,6 +1026,9 @@ class Server extends LogEnabledClass
                 $ex = $customException;
             }
 
+            // An unexpected error can carry internals (SQL, file paths), in production they are only logged
+            $production = \gijsbos\ExtFuncs\Utils\Environment::isProduction();
+
             try
             {
                 log_error($ex->getMessage());
@@ -1030,7 +1036,11 @@ class Server extends LogEnabledClass
             }
             catch(RuntimeException $rex)
             {
-                $this->sendException(new InternalServerErrorException(get_class($rex), $rex->getMessage()));
+                // Logging failed (e.g. the log file is not writable), its message names the log file: hidden in production too
+                $this->sendException(new InternalServerErrorException(
+                    $production ? "internalError" : get_class($rex),
+                    $production ? "An internal error occurred" : $rex->getMessage(),
+                ));
                 return;
             }
 
@@ -1040,9 +1050,6 @@ class Server extends LogEnabledClass
             }
             else
             {
-                // An unexpected error can carry internals (SQL, file paths), in production they are only logged (above)
-                $production = \gijsbos\ExtFuncs\Utils\Environment::isProduction();
-
                 $this->sendException(new InternalServerErrorException(
                     $production ? "internalError" : get_class($ex),
                     $production ? "An internal error occurred" : $ex->getMessage(),
