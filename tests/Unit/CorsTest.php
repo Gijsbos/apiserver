@@ -40,7 +40,8 @@ final class CorsTest extends TestCase
 
         $this->assertSame([], $cors->allowedOrigins);
         $this->assertSame(["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"], $cors->allowedMethods);
-        $this->assertSame(["Authorization", "Content-Type"], $cors->allowedHeaders);
+        $this->assertSame(["Authorization", "Content-Type", "traceparent", "X-Correlation-ID"], $cors->allowedHeaders);
+        $this->assertSame(["X-Request-Id", "X-Correlation-ID"], $cors->exposedHeaders);
         $this->assertFalse($cors->allowCredentials);
         $this->assertSame(86400, $cors->maxAgeSeconds);
     }
@@ -88,9 +89,17 @@ final class CorsTest extends TestCase
         $this->assertFalse($this->handle($cors, "OPTIONS", "https://APP.example.com"));
     }
 
-    public function testCredentialedWildcardStillHandlesPreflight()
+    public function testCredentialedWildcardIsRefused()
     {
-        $this->assertTrue($this->handle(new Cors(["*"], allowCredentials: true), "OPTIONS", "https://app.example.com"));
+        // Every website could call the API with the cookies of the user
+        $this->expectException(\InvalidArgumentException::class);
+
+        new Cors(["*"], allowCredentials: true);
+    }
+
+    public function testCredentialedListedOriginIsHandled()
+    {
+        $this->assertTrue($this->handle(new Cors(["https://app.example.com"], allowCredentials: true), "OPTIONS", "https://app.example.com"));
     }
 
     public function testMethodComparisonIsCaseInsensitiveViaServer()

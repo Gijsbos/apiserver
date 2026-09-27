@@ -51,6 +51,8 @@ trait IsolatesGlobalState
 
         RequestParam::$contentType = null;
         RequestParam::$requestData = null;
+
+        HTTPRequestException::$useRfc9457 = false;
     }
 
     /**

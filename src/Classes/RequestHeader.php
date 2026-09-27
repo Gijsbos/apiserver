@@ -37,7 +37,25 @@ class RequestHeader extends RouteParam
             $key = substr($key, 5); 
         }
 
-        // Return key
-        return @$_SERVER[$key] ?? @$_SERVER["REDIRECT_$key"] ?? (function_exists('getallheaders') ? @\getallheaders()[$key] : null);
+        return $_SERVER[$key] ?? $_SERVER["REDIRECT_$key"] ?? self::getFromAllHeaders($headerName);
+    }
+
+    /**
+     * getFromAllHeaders
+     *  Fallback for servers that do not put every header in $_SERVER, getallheaders() uses the header names
+     *  as sent ("X-Custom-Header"), matched case insensitive
+     */
+    private static function getFromAllHeaders(string $headerName) : null|string
+    {
+        if(!function_exists('getallheaders'))
+            return null;
+
+        $headerName = strtolower(str_replace('_', '-', preg_replace('/^HTTP_/i', '', $headerName)));
+
+        foreach((array) \getallheaders() as $name => $value)
+            if(strtolower((string) $name) === $headerName)
+                return (string) $value;
+
+        return null;
     }
 }

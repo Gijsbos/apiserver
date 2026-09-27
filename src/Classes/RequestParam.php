@@ -14,14 +14,39 @@ class RequestParam extends RouteParam
     public static $requestData = null;
 
     /**
+     * mediaType
+     *  The media type of a Content-Type header, without parameters and lowercase (RFC 9110 §8.3.1):
+     *  "Application/JSON; charset=utf-8" becomes "application/json"
+     */
+    public static function mediaType(null|string $contentType) : null|string
+    {
+        if($contentType === null)
+            return null;
+
+        $mediaType = strtolower(trim(explode(";", $contentType, 2)[0]));
+
+        return $mediaType !== "" ? $mediaType : null;
+    }
+
+    /**
+     * isJson
+     *  application/json and the structured syntax suffix +json (RFC 6839), e.g. application/merge-patch+json
+     */
+    public static function isJson(null|string $mediaType) : bool
+    {
+        return $mediaType === "application/json" || (is_string($mediaType) && str_starts_with($mediaType, "application/") && str_ends_with($mediaType, "+json"));
+    }
+
+    /**
      * getContentType
+     *  The media type of the request body, see mediaType
      */
     private static function getContentType()
     {
         if(self::$contentType !== null)
             return self::$contentType;
 
-        self::$contentType = RequestHeader::getHeader("content-type");
+        self::$contentType = self::mediaType(RequestHeader::getHeader("content-type"));
 
         return self::$contentType;
     }
@@ -36,18 +61,16 @@ class RequestParam extends RouteParam
 
         $input = file_get_contents('php://input');
 
-        switch($contentType)
+        if(self::isJson($contentType))
         {
-            case "application/json":
-                if(!is_json($input))
-                    throw new BadRequestException("jsonInputInvalid", "Payload is not valid json");
+            if(!is_json($input))
+                throw new BadRequestException("jsonInputInvalid", "Payload is not valid json");
 
-                $data = json_decode($input, true);
-            break;
-
-            case "application/x-www-form-urlencoded":
-            default:
-                parse_str($input, $data); // form-like payload
+            $data = json_decode($input, true);
+        }
+        else
+        {
+            parse_str($input, $data); // application/x-www-form-urlencoded, form-like payload
         }
 
         self::$requestData = $data;
@@ -72,13 +95,10 @@ class RequestParam extends RouteParam
      */
     private static function getPostValue(string $parameterName, ?string $contentType = null)
     {
-        switch($contentType)
-        {
-            case "application/json":
-                return @self::getRequestData($contentType)[$parameterName];
-            default:
-                return filter_input(INPUT_POST, $parameterName);
-        }
+        if(self::isJson($contentType))
+            return @self::getRequestData($contentType)[$parameterName];
+
+        return filter_input(INPUT_POST, $parameterName);
     }
 
     /**

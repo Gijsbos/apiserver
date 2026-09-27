@@ -266,16 +266,10 @@ final class ServerBehaviorTest extends TestCase
         $this->assertMatchesRegularExpression('/^2024-01-0[12]T\d\d:\d\d:\d\d[+-]\d\d:\d\d$/', $r["result"]["date"]);
     }
 
-    public function testStringsAreHtmlEscapedByDefault()
+    public function testStringsAreReturnedAsIs()
     {
+        // Responses are JSON data, HTML is encoded by the client where it is shown
         $r = $this->dispatch("GET", "/params/escape");
-
-        $this->assertSame(["html" => '&lt;b&gt;&quot;hi&quot;&lt;/b&gt; &amp; bye', "count" => 3], $r["result"]);
-    }
-
-    public function testEscapingCanBeDisabled()
-    {
-        $r = $this->dispatch("GET", "/params/escape", [], ["escapeResult" => false]);
 
         $this->assertSame(['html' => '<b>"hi"</b> & bye', "count" => 3], $r["result"]);
     }
@@ -348,7 +342,41 @@ final class ServerBehaviorTest extends TestCase
         $r = $this->dispatch("GET", "/params/boom");
 
         $this->assertSame(500, $r["status"]);
-        $this->assertSame(["error" => "RuntimeException", "errorDescription" => "boom", "statusCode" => 500], $r["json"]);
+        $this->assertSame(["statusCode" => 500, "error" => "RuntimeException", "errorDescription" => "boom"], $r["json"]);
+    }
+
+    public function testErrorsFollowTheAcceptHeader()
+    {
+        $r = $this->dispatch("GET", "/does/not/exist", ["Accept" => "application/xml"]);
+
+        $this->assertSame(404, $r["status"]);
+        $this->assertNull($r["json"]);
+        $this->assertSame("routeNotFound", (string) simplexml_load_string($r["body"])->error);
+    }
+
+    public function testErrorsAsProblemDetails()
+    {
+        \gijsbos\Http\Exceptions\HTTPRequestException::$useRfc9457 = true;
+
+        $r = $this->dispatch("GET", "/does/not/exist");
+
+        $this->assertSame(404, $r["status"]);
+        $this->assertSame([
+            "type" => "about:blank",
+            "title" => "Not Found",
+            "status" => 404,
+            "detail" => "Route does not exist",
+            "instance" => "urn:uuid:" . $r["server"]->getRequestId(),
+            "error" => "routeNotFound",
+        ], $r["json"]);
+    }
+
+    public function testUnexpectedExceptionsFollowTheAcceptHeader()
+    {
+        $r = $this->dispatch("GET", "/params/boom", ["Accept" => "application/xml"]);
+
+        $this->assertSame(500, $r["status"]);
+        $this->assertSame("boom", (string) simplexml_load_string($r["body"])->errorDescription);
     }
 
     public function testCustomExceptionHandlerCanTranslateAnException()

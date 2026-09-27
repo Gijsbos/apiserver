@@ -234,16 +234,16 @@
         },
         {
             "name": "gijsbos/http",
-            "version": "1.4",
+            "version": "1.5",
             "source": {
                 "type": "git",
                 "url": "https://github.com/Gijsbos/http.git",
-                "reference": "b8ae26cfd897bb783352b4c78f0e9480bc1350dc"
+                "reference": "070d2c86a87b46e3f270d400917c249352c78736"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/Gijsbos/http/zipball/b8ae26cfd897bb783352b4c78f0e9480bc1350dc",
-                "reference": "b8ae26cfd897bb783352b4c78f0e9480bc1350dc",
+                "url": "https://api.github.com/repos/Gijsbos/http/zipball/070d2c86a87b46e3f270d400917c249352c78736",
+                "reference": "070d2c86a87b46e3f270d400917c249352c78736",
                 "shasum": ""
             },
             "require": {
@@ -278,9 +278,9 @@
             ],
             "support": {
                 "issues": "https://github.com/Gijsbos/http/issues",
-                "source": "https://github.com/Gijsbos/http/tree/1.4"
+                "source": "https://github.com/Gijsbos/http/tree/1.5"
             },
-            "time": "2026-09-26T05:59:13+00:00"
+            "time": "2026-09-27T10:00:50+00:00"
         },
         {
             "name": "gijsbos/logging",

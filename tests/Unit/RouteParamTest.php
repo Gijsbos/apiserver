@@ -197,6 +197,34 @@ final class RouteParamTest extends TestCase
             $this->assertNull(RequestParam::extractValueFromGlobals($method, "absent"), $method);
     }
 
+    public function testContentTypeIsReducedToTheMediaType()
+    {
+        // A charset or other parameter must not turn a JSON body into a form body
+        $_SERVER["CONTENT_TYPE"] = "Application/JSON; charset=utf-8";
+        RequestParam::extractValueFromGlobals("GET", "x");
+
+        $this->assertSame("application/json", RequestParam::$contentType);
+    }
+
+    public function testMediaType()
+    {
+        $this->assertSame("application/json", RequestParam::mediaType("application/json"));
+        $this->assertSame("application/json", RequestParam::mediaType(" Application/JSON ; charset=UTF-8"));
+        $this->assertSame("multipart/form-data", RequestParam::mediaType("multipart/form-data; boundary=abc"));
+        $this->assertNull(RequestParam::mediaType(null));
+        $this->assertNull(RequestParam::mediaType(" ; charset=utf-8"));
+    }
+
+    public function testJsonMediaTypes()
+    {
+        $this->assertTrue(RequestParam::isJson("application/json"));
+        $this->assertTrue(RequestParam::isJson("application/merge-patch+json"));
+        $this->assertTrue(RequestParam::isJson("application/vnd.api+json"));
+        $this->assertFalse(RequestParam::isJson("application/x-www-form-urlencoded"));
+        $this->assertFalse(RequestParam::isJson("text/json+plain"));
+        $this->assertFalse(RequestParam::isJson(null));
+    }
+
     public function testContentTypeIsCachedAfterFirstRead()
     {
         $_SERVER["CONTENT_TYPE"] = "application/json";

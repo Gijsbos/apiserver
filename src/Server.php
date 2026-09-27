@@ -9,15 +9,16 @@ use Throwable;
 use UnexpectedValueException;
 
 use gijsbos\Http\Response;
+use gijsbos\Http\Utils\ArrayToXml;
 use gijsbos\ApiServer\Classes\RequestHeader;
 use gijsbos\ApiServer\Attributes\ReturnFilter;
 use gijsbos\ApiServer\Attributes\Route;
 use gijsbos\ApiServer\Interfaces\AuthorizationHeaderVerifierInterface;
 use gijsbos\Http\Exceptions\HTTPRequestException;
+use gijsbos\Http\Exceptions\InternalServerErrorException;
 use gijsbos\Http\Exceptions\ResourceNotFoundException;
 use gijsbos\Http\Exceptions\UpgradeRequiredException;
 use gijsbos\ApiServer\Interfaces\RouteInterface;
-use gijsbos\ApiServer\Parsers\ArrayToXmlParser;
 use gijsbos\ApiServer\Utils\RouteMethodParamsFactory;
 use gijsbos\ApiServer\Parsers\RouteParser;
 use gijsbos\Logging\Classes\LogEnabledClass;
@@ -111,11 +112,6 @@ class Server extends LogEnabledClass
     private bool $requireHttps;
 
     /**
-     * @var bool $escapeResult
-     */
-    private bool $escapeResult;
-
-    /**
      * @var bool $addServerTime
      */
     private bool $addServerTime;
@@ -146,6 +142,25 @@ class Server extends LogEnabledClass
     private null|array $authorizationResult;
 
     /**
+     * @var string $requestId
+     *  Generated for every request (UUID v4), never taken from the client: unique and trustworthy
+     */
+    private string $requestId;
+
+    /**
+     * @var string $correlationId
+     *  Shared by all requests of a chain across services, see extractCorrelationId
+     */
+    private string $correlationId;
+
+    /**
+     * @var array $trustedProxies
+     *  IP addresses or CIDR ranges of the reverse proxies / load balancers in front of the server.
+     *  Only requests from these may set X-Forwarded-For and X-Forwarded-Proto.
+     */
+    private array $trustedProxies;
+
+    /**
      * __construct
      */
     public function __construct(array $opts = [])
@@ -159,15 +174,138 @@ class Server extends LogEnabledClass
         $this->requestStartTime = microtime(true); // Keep request time
         $this->requestEndTime = null;
         $this->requireHttps = array_key_exists("requireHttps", $opts) ? boolval($opts["requireHttps"]) : false;
-        $this->escapeResult = array_key_exists("escapeResult", $opts) ? boolval($opts["escapeResult"]) : true;
         $this->addServerTime = array_key_exists("addServerTime", $opts) ? boolval($opts["addServerTime"]) : false;
         $this->addRequestTime = array_key_exists("addRequestTime", $opts) ? boolval($opts["addRequestTime"]) : false;
         $this->dateTimeFormat = @$opts["dateTimeFormat"] ?? "ISO8601";
         $this->routesFile = @$opts["routesFile"] ?? self::$DEFAULT_ROUTES_FILE;
         $this->authorizationHeaderVerifier = @$opts["authorizationHeaderVerifier"];
         $this->authorizationResult = null;
+        $this->trustedProxies = is_array(@$opts["trustedProxies"]) ? array_values($opts["trustedProxies"]) : [];
+        $this->requestId = uuid4();
+        $this->correlationId = self::extractCorrelationId() ?? $this->requestId;
 
         $this->setLogOutput("file");
+    }
+
+    /**
+     * extractCorrelationId
+     *  The id of the chain this request belongs to, from the first valid header:
+     *      traceparent         - W3C Trace Context, the trace-id
+     *      X-Correlation-ID    - a correlation id
+     *      X-Request-Id        - the request id of the caller
+     *  Headers are client supplied: an id that does not match (control characters, too long) is ignored,
+     *  it never reaches the logs. Returns null when there is none, the request then starts a new chain.
+     */
+    private static function extractCorrelationId() : null|string
+    {
+        $traceparent = RequestHeader::getHeader("traceparent");
+
+        // version-traceid-parentid-flags, an all zero trace-id and version ff are invalid
+        if(is_string($traceparent) && preg_match('/^([0-9a-f]{2})-([0-9a-f]{32})-[0-9a-f]{16}-[0-9a-f]{2}$/D', strtolower(trim($traceparent)), $match) && $match[1] !== "ff" && $match[2] !== str_repeat("0", 32))
+            return $match[2];
+
+        foreach(["x-correlation-id", "x-request-id"] as $headerName)
+        {
+            $value = RequestHeader::getHeader($headerName);
+
+            if(is_string($value) && preg_match('/^[A-Za-z0-9._:-]{8,128}$/D', trim($value)))
+                return trim($value);
+        }
+
+        return null;
+    }
+
+    /**
+     * getRequestId
+     *  The id of this request, see $requestId. Add it to log entries and return it to the caller for support.
+     */
+    public function getRequestId() : string
+    {
+        return $this->requestId;
+    }
+
+    /**
+     * getCorrelationId
+     *  The id of the chain this request belongs to (see extractCorrelationId), the request id when it starts a new chain.
+     *  Add it to log entries and pass it on to calls the request makes.
+     */
+    public function getCorrelationId() : string
+    {
+        return $this->correlationId;
+    }
+
+    /**
+     * ipInRange
+     *  $range is an IP address or a CIDR range (e.g. 10.0.0.0/8, fd00::/8)
+     */
+    private static function ipInRange(string $ip, string $range) : bool
+    {
+        [$subnet, $bits] = str_contains($range, "/") ? explode("/", $range, 2) : [$range, null];
+
+        $ipBinary = @inet_pton($ip);
+        $subnetBinary = @inet_pton($subnet);
+
+        if($ipBinary === false || $subnetBinary === false || strlen($ipBinary) !== strlen($subnetBinary))
+            return false;
+
+        $bits = $bits === null ? strlen($ipBinary) * 8 : (int) $bits;
+
+        $bytes = intdiv($bits, 8);
+        $remainder = $bits % 8;
+
+        if(substr($ipBinary, 0, $bytes) !== substr($subnetBinary, 0, $bytes))
+            return false;
+
+        if($remainder === 0)
+            return true;
+
+        $mask = (0xFF << (8 - $remainder)) & 0xFF;
+
+        return (ord($ipBinary[$bytes]) & $mask) === (ord($subnetBinary[$bytes]) & $mask);
+    }
+
+    /**
+     * isTrustedProxy
+     */
+    private function isTrustedProxy(null|string $ip) : bool
+    {
+        if(!is_string($ip))
+            return false;
+
+        foreach($this->trustedProxies as $range)
+            if(self::ipInRange($ip, (string) $range))
+                return true;
+
+        return false;
+    }
+
+    /**
+     * getClientIp
+     *  REMOTE_ADDR, or behind trusted proxies the first address in X-Forwarded-For that is not a trusted proxy
+     *  (read from the right: every entry left of the last trusted proxy can be set by the client)
+     */
+    public function getClientIp() : null|string
+    {
+        $remoteAddress = $_SERVER["REMOTE_ADDR"] ?? null;
+
+        if(!$this->isTrustedProxy($remoteAddress))
+            return $remoteAddress;
+
+        $forwardedFor = RequestHeader::getHeader("x-forwarded-for");
+
+        if(!is_string($forwardedFor))
+            return $remoteAddress;
+
+        foreach(array_reverse(array_map("trim", explode(",", $forwardedFor))) as $ip)
+        {
+            if(filter_var($ip, FILTER_VALIDATE_IP) === false)
+                return $remoteAddress;
+
+            if(!$this->isTrustedProxy($ip))
+                return $ip;
+        }
+
+        return $remoteAddress;
     }
 
     /**
@@ -336,6 +474,9 @@ class Server extends LogEnabledClass
             return true;
         } elseif (!empty($_SERVER['SERVER_PORT']) && $_SERVER['SERVER_PORT'] == 443) {
             return true;
+        } elseif ($this->isTrustedProxy($_SERVER['REMOTE_ADDR'] ?? null)) {
+            // TLS terminated by a trusted proxy, a client can set this header too so it is only read from a proxy
+            return strtolower(trim((string) RequestHeader::getHeader('x-forwarded-proto'))) === 'https';
         } else {
             return false;
         }
@@ -590,23 +731,6 @@ class Server extends LogEnabledClass
     }
 
     /**
-     * applyEscapeResult
-     */
-    private function applyEscapeResult(array $data)
-    {
-        if($this->escapeResult)
-        {
-            array_walk_recursive($data, function(&$value, $key)
-            {
-                if(is_string($value))
-                    $value = htmlspecialchars($value);
-            });
-        }
-
-        return $data;
-    }
-
-    /**
      * executeRoute
      */
     public function executeRoute(Route $route)
@@ -632,9 +756,6 @@ class Server extends LogEnabledClass
 
         // Apply filter
         $returnData = $this->applyReturnFilter($route, $returnData);
-
-        // Escape result for safety
-        $returnData = $this->applyEscapeResult($returnData);
 
         // Return data or empty array
         return $returnData;
@@ -675,27 +796,122 @@ class Server extends LogEnabledClass
     }
 
     /**
+     * getResponseHeaders
+     *  Sent at the start of every request (OWASP REST Security Cheat Sheet), a route may replace them
+     *  (e.g. an HTML page sets its own Content-Security-Policy and Cache-Control):
+     *      X-Content-Type-Options      - the browser follows the content type, a response is never sniffed as HTML
+     *      Cache-Control               - responses carry personal data and tokens, they are not stored
+     *      Content-Security-Policy     - a JSON response loads nothing and is never framed
+     *      Strict-Transport-Security   - over HTTPS only, the browser keeps using HTTPS
+     *      X-Request-Id                - this request, for support
+     *      X-Correlation-ID            - the chain, for the caller's logs
+     */
+    public function getResponseHeaders() : array
+    {
+        return array_filter([
+            "X-Content-Type-Options" => "nosniff",
+            "Cache-Control" => "no-store",
+            "Content-Security-Policy" => "default-src 'none'; frame-ancestors 'none'",
+            "Strict-Transport-Security" => $this->isHttps() ? "max-age=31536000" : null,
+            "X-Request-Id" => $this->requestId,
+            "X-Correlation-ID" => $this->correlationId,
+        ], fn($value) => $value !== null);
+    }
+
+    /**
+     * sendResponseHeaders
+     */
+    private function sendResponseHeaders() : void
+    {
+        foreach($this->getResponseHeaders() as $name => $value)
+            header("$name: $value");
+    }
+
+    /**
+     * negotiateFormat
+     *  The response format from the Accept header (the Content-Type of a request describes its body, not the answer):
+     *  "xml" when application/xml is preferred over application/json, "json" otherwise (also for any type or no header)
+     */
+    public static function negotiateFormat(null|string $accept) : string
+    {
+        $best = ["json" => null, "xml" => null]; // Per format: [quality, position]
+
+        foreach(explode(",", (string) $accept) as $position => $mediaRange)
+        {
+            $parts = array_map("trim", explode(";", $mediaRange));
+
+            $format = match(strtolower(array_shift($parts))) {
+                "application/json", "application/problem+json" => "json",
+                "application/xml", "text/xml", "application/problem+xml" => "xml",
+                default => null,
+            };
+
+            if($format === null)
+                continue;
+
+            $quality = 1.0;
+
+            foreach($parts as $parameter)
+                if(preg_match('/^q=([0-9.]+)$/i', $parameter, $match))
+                    $quality = (float) $match[1];
+
+            if($best[$format] === null || $quality > $best[$format][0])
+                $best[$format] = [$quality, $position];
+        }
+
+        [$xml, $json] = [$best["xml"], $best["json"]];
+
+        if($xml === null || $xml[0] <= 0)
+            return "json";
+
+        if($json === null || $json[0] <= 0)
+            return "xml";
+
+        // Equal quality: the first listed wins
+        return $xml[0] > $json[0] || ($xml[0] === $json[0] && $xml[1] < $json[1]) ? "xml" : "json";
+    }
+
+    /**
+     * getResponseFormat
+     *  The format of this request's response, results and errors alike, see negotiateFormat
+     */
+    public function getResponseFormat() : string
+    {
+        return self::negotiateFormat(RequestHeader::getHeader("accept"));
+    }
+
+    /**
      * printReturnValue
+     *  Responses are data, not HTML: strings are returned as is and encoded by the client for where they are shown.
+     *  The content type (and nosniff, see getResponseHeaders) make sure a browser never renders a response as HTML.
      */
     private function printReturnValue(array $responseData)
     {
-        $contentType = RequestHeader::getHeader("content-type");
+        switch($this->getResponseFormat()) {
 
-        switch($contentType) {
-
-            case "application/xml":
-                Header('Content-Type: application/xml; charset=utf-8');
+            case "xml":
+                header("Content-Type: application/xml; charset=utf-8");
                 http_response_code($this->getRoute()?->getStatusCode() ?? 200);
-                echo (new ArrayToXmlParser())->arrayToXml($responseData)->asXML();
+                echo ArrayToXml::convert($responseData)->asXML();
             return;
 
-            case "application/json":
+            case "json":
             default:
-                Header('Content-Type: application/json; charset=utf-8');
+                header("Content-Type: application/json; charset=utf-8");
                 http_response_code($this->getRoute()?->getStatusCode() ?? 200);
                 echo json_encode($responseData);
             return;
         }
+    }
+
+    /**
+     * sendException
+     *  Errors are answered in the negotiated format too; the exception sends its own content type and status code.
+     *  As RFC 9457 problem details (HTTPRequestException::$useRfc9457) the instance is this request.
+     */
+    private function sendException(HTTPRequestException $exception) : void
+    {
+        $exception->send($this->getResponseFormat(), "urn:uuid:{$this->requestId}");
     }
 
     /**
@@ -731,6 +947,9 @@ class Server extends LogEnabledClass
     {
         try
         {
+            // Every response, also HTML pages and errors, see getResponseHeaders
+            $this->sendResponseHeaders();
+
             // Verify if https is required
             $this->verifyHttps();
 
@@ -787,7 +1006,7 @@ class Server extends LogEnabledClass
         }
         catch(HTTPRequestException $ex)
         {
-            $ex->sendJson();
+            $this->sendException($ex);
 
             if($ex->getStatusCode() == 500)
             {
@@ -811,31 +1030,23 @@ class Server extends LogEnabledClass
             }
             catch(RuntimeException $rex)
             {
-                http_response_code(500);
-                print(json_encode([
-                    "error" => get_class($rex),
-                    "errorDescription" => $rex->getMessage(),
-                    "statusCode" => 500,
-                ]));
+                $this->sendException(new InternalServerErrorException(get_class($rex), $rex->getMessage()));
                 return;
             }
 
             if($ex instanceof HTTPRequestException)
             {
-                $ex->sendJson();
+                $this->sendException($ex);
             }
             else
             {
                 // An unexpected error can carry internals (SQL, file paths), in production they are only logged (above)
                 $production = \gijsbos\ExtFuncs\Utils\Environment::isProduction();
 
-                http_response_code(500);
-                print(json_encode([
-                    "error" => $production ? "internalError" : get_class($ex),
-                    "errorDescription" => $production ? "An internal error occurred" : $ex->getMessage(),
-                    "statusCode" => 500,
-                ]));
-                return;
+                $this->sendException(new InternalServerErrorException(
+                    $production ? "internalError" : get_class($ex),
+                    $production ? "An internal error occurred" : $ex->getMessage(),
+                ));
             }
         }
     }
@@ -850,7 +1061,8 @@ class Server extends LogEnabledClass
 
         foreach($headers as $key => $value)
         {
-            $key = str_starts_with(strtolower($key), "http_") ? $key : "http_$key";
+            // As a web server does: "X-Custom-Header" becomes HTTP_X_CUSTOM_HEADER
+            $key = str_replace("-", "_", str_starts_with(strtolower($key), "http_") ? $key : "http_$key");
 
             $_SERVER[strtoupper($key)] = $value;
         }

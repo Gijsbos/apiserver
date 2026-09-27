@@ -26,7 +26,7 @@
     "require": {
         "gijsbos/stringfuncs": "^1.4.1",
         "gijsbos/php-cli-parser": "^1.1",
-        "gijsbos/http": "^1.4",
+        "gijsbos/http": "^1.5",
         "gijsbos/logging": "^1.4",
         "gijsbos/extfuncs": "^1.7",
         "gijsbos/classparser": "^2.1.2"
