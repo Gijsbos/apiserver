@@ -187,6 +187,8 @@ final class ServerHeadersTest extends TestCase
             "equal quality, first listed" => ["application/xml, application/json", "xml"],
             "xml refused" => ["application/xml;q=0", "json"],
             "unknown type" => ["text/html", "json"],
+            "browser navigation" => ["text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8", "json"],
+            "browser navigation, xml first" => ["application/xml,text/html;q=0.9", "json"],
         ];
     }
 
@@ -194,5 +196,28 @@ final class ServerHeadersTest extends TestCase
     public function testNegotiatesFormatOnAccept(null|string $accept, string $format) : void
     {
         $this->assertSame($format, Server::negotiateFormat($accept));
+    }
+
+    // fixed format
+
+    public function testRouteWithResponseFormatIgnoresAccept() : void
+    {
+        $server = $this->dispatch("GET", "/params/json-only", ["Accept" => "application/xml"])["server"];
+
+        $this->assertSame("json", $server->getResponseFormat());
+    }
+
+    public function testRouteWithoutResponseFormatFollowsAccept() : void
+    {
+        $server = $this->dispatch("GET", "/params/escape", ["Accept" => "application/xml"])["server"];
+
+        $this->assertSame("xml", $server->getResponseFormat());
+    }
+
+    public function testUnsupportedResponseFormatIsRefused() : void
+    {
+        $this->expectException(\InvalidArgumentException::class);
+
+        new \gijsbos\ApiServer\Attributes\ResponseFormat("yaml");
     }
 }

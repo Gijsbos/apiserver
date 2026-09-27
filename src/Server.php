@@ -11,6 +11,7 @@ use UnexpectedValueException;
 use gijsbos\Http\Response;
 use gijsbos\Http\Utils\ArrayToXml;
 use gijsbos\ApiServer\Classes\RequestHeader;
+use gijsbos\ApiServer\Attributes\ResponseFormat;
 use gijsbos\ApiServer\Attributes\ReturnFilter;
 use gijsbos\ApiServer\Attributes\Route;
 use gijsbos\ApiServer\Interfaces\AuthorizationHeaderVerifierInterface;
@@ -833,7 +834,9 @@ class Server extends LogEnabledClass
     /**
      * negotiateFormat
      *  The response format from the Accept header (the Content-Type of a request describes its body, not the answer):
-     *  "xml" when application/xml is preferred over application/json, "json" otherwise (also for any type or no header)
+     *  "xml" when application/xml is preferred over application/json, "json" otherwise (also for any type or no header).
+     *  A browser navigation lists text/html next to application/xml (e.g. "text/html, ..., application/xml;q=0.9"),
+     *  it asks for a page, not for XML data: it gets JSON.
      */
     public static function negotiateFormat(null|string $accept) : string
     {
@@ -843,7 +846,13 @@ class Server extends LogEnabledClass
         {
             $parts = array_map("trim", explode(";", $mediaRange));
 
-            $format = match(strtolower(array_shift($parts))) {
+            $type = strtolower(array_shift($parts));
+
+            // A browser navigation, see above
+            if($type === "text/html")
+                return "json";
+
+            $format = match($type) {
                 "application/json", "application/problem+json" => "json",
                 "application/xml", "text/xml", "application/problem+xml" => "xml",
                 default => null,
@@ -876,10 +885,16 @@ class Server extends LogEnabledClass
 
     /**
      * getResponseFormat
-     *  The format of this request's response, results and errors alike, see negotiateFormat
+     *  The format of this request's response, results and errors alike: the ResponseFormat of the route when it has one,
+     *  otherwise negotiated, see negotiateFormat
      */
     public function getResponseFormat() : string
     {
+        $responseFormat = $this->route instanceof RouteInterface ? $this->route->getAttributes(ResponseFormat::class) : null;
+
+        if($responseFormat !== null)
+            return $responseFormat->newInstance()->format;
+
         return self::negotiateFormat(RequestHeader::getHeader("accept"));
     }
 

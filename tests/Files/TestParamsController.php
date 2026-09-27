@@ -6,6 +6,7 @@ use gijsbos\ApiServer\Attributes\ExampleResponse;
 use gijsbos\ApiServer\Attributes\ExecuteBeforeRoute;
 use gijsbos\ApiServer\Attributes\GetRoute;
 use gijsbos\ApiServer\Attributes\PostRoute;
+use gijsbos\ApiServer\Attributes\ResponseFormat;
 use gijsbos\ApiServer\Attributes\RequiresAuthority;
 use gijsbos\ApiServer\Attributes\ReturnFilter;
 use gijsbos\ApiServer\Attributes\Route;
@@ -269,6 +270,13 @@ class TestParamsController extends RouteController
     public function escape()
     {
         return ["html" => '<b>"hi"</b> & bye', "count" => 3];
+    }
+
+    #[GetRoute('/params/json-only')]
+    #[ResponseFormat("json")]
+    public function jsonOnly()
+    {
+        return ["format" => "json"];
     }
 
     #[GetRoute('/params/filtered')]

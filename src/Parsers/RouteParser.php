@@ -3,6 +3,7 @@ declare(strict_types=1);
 
 namespace gijsbos\ApiServer\Parsers;
 
+use RuntimeException;
 use InvalidArgumentException;
 use ReflectionClass;
 use ReflectionMethod;
@@ -250,6 +251,14 @@ class RouteParser extends LogEnabledClass
 
             $this->parseMethods($className, $methods, $prefixTree);
         }
+
+        // Without routes every request would answer 404 routeNotFound, without a hint why: refuse instead of caching nothing
+        if(count($this->registered) === 0)
+            throw new RuntimeException(sprintf(
+                "No routes found in %d controller(s), the route cache '%s' is not written. Load the controllers first, e.g. set CLI_SCAN_FOLDERS=src/Controllers",
+                count($classes),
+                $this->routesFile,
+            ));
 
         $trie = $this->createTrie($prefixTree);
 

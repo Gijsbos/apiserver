@@ -131,9 +131,12 @@ JSON responses are data and are not HTML escaped, clients encode values where th
 - `Strict-Transport-Security` over HTTPS
 - `X-Request-Id`, `X-Correlation-ID`
 
-A route that renders HTML sends its own `Content-Security-Policy` and `Cache-Control`. The format follows the `Accept` header: XML when `application/xml` is preferred, JSON otherwise.
+A route that renders HTML sends its own `Content-Security-Policy` and `Cache-Control`. The format follows the `Accept` header: XML when `application/xml` is preferred, JSON otherwise (a browser navigation, which lists `text/html`, gets JSON). `#[ResponseFormat("json")]` fixes the format of a route, e.g. for documents a standard defines as JSON.
 
 ### Caching Routes
+
+The route cache is built from the loaded controllers: set `CLI_SCAN_FOLDERS` (e.g. `src/Controllers`) so they are found. When no routes are found the cache is not written and an error names the cause, instead of every request answering 404.
+
 
 Routes paths are cached in the cache folder, you can use the bin/api binary to cache routes. When there is no routes file, a cache will be created upon first use.  
 
